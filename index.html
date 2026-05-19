@@ -1,1142 +1,796 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>비북스 매니저 대시보드</title>
-  <link rel="stylesheet" href="manager.css">
+  <style>
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --surface2: #f0efe9;
+      --border: rgba(0,0,0,0.10);
+      --border-strong: rgba(0,0,0,0.18);
+      --text: #1a1a18;
+      --text-muted: #6b6b66;
+      --accent: #2d5a3d;
+      --accent-light: #e8f0ea;
+      --accent-hover: #234830;
+      --danger: #c0392b;
+      --warning: #d68910;
+      --radius: 10px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+    /* ─── Header ─── */
+    header {
+      background: var(--accent);
+      color: white;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header h1 { font-size: 17px; font-weight: 700; letter-spacing: 0.5px; }
+    .header-right { display: flex; gap: 12px; align-items: center; }
+    .sync-status { font-size: 12px; opacity: 0.75; }
+    #syncBtn {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.15s;
+    }
+    #syncBtn:hover { background: rgba(255,255,255,0.28); }
+
+    /* ─── API Setup Banner ─── */
+    #setupBanner {
+      background: #fff8e1;
+      border-bottom: 1px solid #ffe082;
+      padding: 10px 24px;
+      font-size: 13px;
+      color: #5d4037;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    #setupBanner.hidden { display: none; }
+    #setupBanner input {
+      flex: 1;
+      max-width: 480px;
+      padding: 6px 10px;
+      border: 1px solid #ffe082;
+      border-radius: 6px;
+      font-size: 13px;
+      background: white;
+    }
+    #setupBanner button {
+      padding: 6px 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    /* ─── Tabs ─── */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      padding: 16px 24px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      padding: 8px 18px;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .tab.active { border-bottom-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .tab:hover:not(.active) { color: var(--text); }
+
+    /* ─── Main layout ─── */
+    .main { display: flex; gap: 0; min-height: calc(100vh - 112px); }
+
+    /* ─── Filter bar ─── */
+    .filter-bar {
+      padding: 14px 24px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .filter-bar select, .filter-bar input {
+      padding: 6px 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      font-size: 13px;
+      background: white;
+      color: var(--text);
+    }
+    .filter-label { font-size: 12px; color: var(--text-muted); }
+
+    /* ─── Task list ─── */
+    .task-area { flex: 1; padding: 20px 24px; min-width: 0; }
+    .task-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .task-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      cursor: pointer;
+      transition: box-shadow 0.15s, border-color 0.15s;
+      position: relative;
+    }
+    .task-card:hover { box-shadow: var(--shadow); border-color: var(--border-strong); }
+    .task-card.done { opacity: 0.55; }
+
+    .task-priority-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+    .prio-urgent { background: #e74c3c; }
+    .prio-important { background: #f39c12; }
+    .prio-normal { background: #27ae60; }
+
+    .task-content { flex: 1; min-width: 0; }
+    .task-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .task-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--surface2);
+      color: var(--text-muted);
+    }
+    .badge.assignee-jose { background: #e8f4fd; color: #1a5276; }
+    .badge.assignee-sudden { background: #fef9e7; color: #7d6608; }
+    .badge.assignee-both { background: #e9f7ef; color: #1e8449; }
+    .badge.status-진행중 { background: #eaf4fb; color: #1a5276; }
+    .badge.status-완료 { background: #e9f7ef; color: #1e8449; }
+    .badge.status-보류 { background: #fdedec; color: #922b21; }
+
+    .task-date { font-size: 12px; color: var(--text-muted); margin-left: auto; flex-shrink: 0; }
+    .task-date.overdue { color: var(--danger); font-weight: 600; }
+
+    /* ─── Add task button ─── */
+    .add-task-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--accent-light);
+      border: 1.5px dashed var(--accent);
+      border-radius: var(--radius);
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 4px;
+    }
+    .add-task-btn:hover { background: #dceee0; }
+
+    /* ─── Info sidebar ─── */
+    .info-sidebar {
+      width: 280px;
+      border-left: 1px solid var(--border);
+      background: var(--surface);
+      padding: 16px;
+      flex-shrink: 0;
+    }
+    .info-sidebar h3 { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    #infoContent {
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      color: var(--text);
+      min-height: 80px;
+    }
+    #editInfoBtn {
+      margin-top: 12px;
+      padding: 6px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-muted);
+      width: 100%;
+    }
+    #editInfoBtn:hover { background: var(--surface2); }
+
+    /* ─── Stats bar ─── */
+    .stats-bar {
+      display: flex;
+      gap: 12px;
+      padding: 0 24px 16px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      min-width: 100px;
+    }
+    .stat-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .stat-value { font-size: 22px; font-weight: 700; color: var(--accent); }
+
+    /* ─── Modal ─── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 24px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-muted);
+      line-height: 1;
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: 7px;
+      font-size: 14px;
+      background: white;
+      color: var(--text);
+      font-family: inherit;
+    }
+    .form-group textarea { min-height: 80px; resize: vertical; }
+    .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+    .btn { padding: 8px 18px; border-radius: 7px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: background 0.15s; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border-strong); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover { background: #a93226; }
+
+    /* ─── Loading ─── */
+    .loading { text-align: center; padding: 40px; color: var(--text-muted); }
+    .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty-state { text-align: center; padding: 48px; color: var(--text-muted); }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+
+    /* ─── Toast ─── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1a1a18;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.25s;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { background: var(--accent); }
+    #toast.error { background: var(--danger); }
+
+    @media (max-width: 700px) {
+      .info-sidebar { display: none; }
+      .stats-bar { flex-wrap: wrap; }
+    }
+  </style>
 </head>
 <body>
-  <div class="app-shell">
-    <header class="top-header">
-      <div>
-        <p class="eyebrow">BBOOKS MANAGER</p>
-        <h1>비북스 매니저 대시보드</h1>
-        <p id="todayText" class="today-text"></p>
-      </div>
-      <div class="header-actions">
-        <div class="owner-filter" aria-label="담당자 필터">
-          <button class="pill active" data-owner-filter="all">전체</button>
-          <button class="pill" data-owner-filter="호세">호세</button>
-          <button class="pill" data-owner-filter="써든리">써든리</button>
-        </div>
-        <button id="openInfoModal" class="secondary-button">📋 중요 정보</button>
-        <button id="openTaskModal" class="primary-button">+ 업무 추가</button>
-      </div>
-    </header>
 
-    <nav id="tabMenu" class="tab-menu" aria-label="업무 카테고리 탭"></nav>
-
-    <main>
-      <section class="view-toolbar">
-        <div class="view-switcher" aria-label="캘린더 보기 전환">
-          <button class="segmented-button active" data-view-mode="month">월간</button>
-          <button class="segmented-button" data-view-mode="week">주간</button>
-          <button class="segmented-button" data-view-mode="day">일간</button>
-        </div>
-        <div id="calendarRangeTitle" class="range-title"></div>
-      </section>
-
-      <section id="calendarView" class="calendar-layout">
-        <div class="calendar-main">
-          <div id="calendarGridWrap" class="calendar-grid-wrap"></div>
-        </div>
-        <aside class="undated-panel">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">No Due Date</p>
-              <h2>날짜 미정 업무</h2>
-            </div>
-            <button id="addUndatedTask" class="ghost-button">+ 추가</button>
-          </div>
-          <p class="panel-help">업무를 드래그해서 캘린더 날짜에 놓거나, 업무를 클릭해 날짜를 선택하세요.</p>
-          <div id="undatedList" class="task-stack"></div>
-        </aside>
-      </section>
-
-      <section id="listView" class="list-view hidden">
-        <div class="list-controls">
-          <label>
-            정렬
-            <select id="sortSelect">
-              <option value="priority">중요도순</option>
-              <option value="date">날짜순</option>
-              <option value="owner">담당자순</option>
-            </select>
-          </label>
-          <label>
-            진행상태
-            <select id="statusFilter">
-              <option value="all">전체</option>
-              <option value="예정">예정</option>
-              <option value="진행중">진행중</option>
-              <option value="완료">완료</option>
-              <option value="보류">보류</option>
-            </select>
-          </label>
-        </div>
-        <div id="taskList" class="task-list"></div>
-      </section>
-    </main>
+<header>
+  <h1>🟢 BBOOKS MANAGER</h1>
+  <div class="header-right">
+    <span class="sync-status" id="syncStatus">구글 시트 미연결</span>
+    <button id="syncBtn" onclick="loadAll()">↻ 새로고침</button>
   </div>
+</header>
 
-  <aside id="dayPanel" class="day-panel" aria-live="polite">
-    <div class="day-panel-header">
-      <div>
-        <p class="eyebrow">Selected Date</p>
-        <h2 id="dayPanelTitle">날짜 업무</h2>
-      </div>
-      <button id="closeDayPanel" class="icon-button" aria-label="닫기">×</button>
+<!-- API URL 설정 배너 -->
+<div id="setupBanner">
+  <span>⚠️ Google Apps Script 웹앱 URL을 입력하면 구글 시트와 연동됩니다.</span>
+  <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/AKf.../exec" />
+  <button onclick="saveApiUrl()">연결</button>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="setTab('all', this)">전체</div>
+  <div class="tab" onclick="setTab('호세', this)">호세</div>
+  <div class="tab" onclick="setTab('써든리', this)">써든리</div>
+  <div class="tab" onclick="setTab('공동', this)">공동</div>
+</div>
+
+<!-- 통계 -->
+<div class="stats-bar" id="statsBar" style="padding-top:16px;">
+  <div class="stat-card"><div class="stat-label">전체 업무</div><div class="stat-value" id="statTotal">-</div></div>
+  <div class="stat-card"><div class="stat-label">진행중</div><div class="stat-value" id="statInProgress">-</div></div>
+  <div class="stat-card"><div class="stat-label">완료</div><div class="stat-value" id="statDone">-</div></div>
+  <div class="stat-card"><div class="stat-label">⚠ 기한초과</div><div class="stat-value" id="statOverdue" style="color:var(--danger)">-</div></div>
+</div>
+
+<div class="filter-bar">
+  <span class="filter-label">필터:</span>
+  <select id="filterStatus" onchange="renderTasks()">
+    <option value="">전체 상태</option>
+    <option>예정</option>
+    <option>진행중</option>
+    <option>완료</option>
+    <option>보류</option>
+  </select>
+  <select id="filterPriority" onchange="renderTasks()">
+    <option value="">전체 중요도</option>
+    <option value="🔴 긴급">🔴 긴급</option>
+    <option value="🟡 중요">🟡 중요</option>
+    <option value="🟢 일반">🟢 일반</option>
+  </select>
+  <select id="sortBy" onchange="renderTasks()">
+    <option value="created">최신순</option>
+    <option value="due">마감일순</option>
+    <option value="priority">중요도순</option>
+  </select>
+  <input type="text" id="searchInput" placeholder="검색..." oninput="renderTasks()" style="margin-left:auto;" />
+</div>
+
+<div class="main">
+  <div class="task-area">
+    <div id="taskList" class="task-list">
+      <div class="loading"><div class="spinner"></div><br>불러오는 중...</div>
     </div>
-    <div id="dayTaskList" class="task-stack"></div>
-    <button id="addTaskForDay" class="primary-button wide">이 날짜에 업무 추가</button>
+    <button class="add-task-btn" onclick="openTaskModal()" style="margin-top:12px;">
+      + 업무 추가
+    </button>
+  </div>
+
+  <aside class="info-sidebar">
+    <h3>📋 비북스 중요 정보</h3>
+    <div id="infoContent">로딩중...</div>
+    <button id="editInfoBtn" onclick="openInfoModal()">✏️ 수정하기</button>
   </aside>
+</div>
 
-  <div id="modalBackdrop" class="modal-backdrop hidden">
-    <section class="task-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modal-header">
-        <div>
-          <p class="eyebrow">Task Form</p>
-          <h2 id="modalTitle">업무 추가</h2>
-        </div>
-        <button id="closeTaskModal" class="icon-button" aria-label="닫기">×</button>
-      </div>
-
-      <form id="taskForm">
-        <input type="hidden" id="taskId">
-        <div class="form-grid">
-          <label class="full">
-            제목 <span class="required">*</span>
-            <input id="taskTitle" type="text" required placeholder="예: 인스타 포스팅 일정 정리">
-          </label>
-
-          <label>
-            카테고리
-            <select id="taskCategory" required></select>
-          </label>
-
-          <label>
-            담당자
-            <select id="taskOwner" required>
-              <option value="호세">호세</option>
-              <option value="써든리">써든리</option>
-              <option value="공동">공동</option>
-            </select>
-          </label>
-
-          <label>
-            중요도
-            <select id="taskPriority" required>
-              <option value="긴급">🔴 긴급</option>
-              <option value="중요">🟡 중요</option>
-              <option value="일반">🟢 일반</option>
-            </select>
-          </label>
-
-          <label>
-            예상 소요시간
-            <input id="taskDuration" type="text" placeholder="예: 2시간, 반나절">
-          </label>
-
-          <label>
-            진행상태
-            <select id="taskStatus" required>
-              <option value="예정">예정</option>
-              <option value="진행중">진행중</option>
-              <option value="완료">완료</option>
-              <option value="보류">보류</option>
-            </select>
-          </label>
-
-          <label>
-            예상완료일
-            <input id="taskDueDate" type="date">
-          </label>
-
-          <label class="checkbox-line">
-            <input id="taskUndated" type="checkbox">
-            날짜 미정
-          </label>
-
-          <label class="full">
-            진행메모
-            <textarea id="taskMemo" rows="4" placeholder="진행 상황이나 다음 액션을 적어주세요."></textarea>
-          </label>
-        </div>
-
-        <div class="modal-actions">
-          <button type="button" id="deleteTask" class="danger-button hidden">삭제</button>
-          <button type="button" id="cancelTaskForm" class="ghost-button">취소</button>
-          <button type="submit" class="primary-button">저장</button>
-        </div>
-      </form>
-    </section>
+<!-- 업무 추가/수정 모달 -->
+<div class="modal-overlay hidden" id="taskModal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modalTitle">업무 추가</span>
+      <button class="modal-close" onclick="closeTaskModal()">✕</button>
+    </div>
+    <input type="hidden" id="taskId" />
+    <div class="form-group">
+      <label>제목 *</label>
+      <input type="text" id="taskTitle" placeholder="업무 내용을 입력하세요" />
+    </div>
+    <div class="form-group">
+      <label>카테고리</label>
+      <input type="text" id="taskCategory" placeholder="예: 촬영, 편집, 기획..." />
+    </div>
+    <div class="form-group">
+      <label>담당자</label>
+      <select id="taskAssignee">
+        <option value="호세">호세</option>
+        <option value="써든리">써든리</option>
+        <option value="공동">공동</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>중요도</label>
+      <select id="taskPriority">
+        <option value="🔴 긴급">🔴 긴급</option>
+        <option value="🟡 중요">🟡 중요</option>
+        <option value="🟢 일반">🟢 일반</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>예상 소요시간</label>
+      <input type="text" id="taskHours" placeholder="예: 2시간" />
+    </div>
+    <div class="form-group">
+      <label>진행상태</label>
+      <select id="taskStatus">
+        <option>예정</option>
+        <option>진행중</option>
+        <option>완료</option>
+        <option>보류</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>예상완료일</label>
+      <input type="date" id="taskDueDate" />
+    </div>
+    <div class="form-group">
+      <label>진행 메모</label>
+      <textarea id="taskMemo" placeholder="진행상황, 참고사항 등"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-danger" id="deleteBtn" onclick="deleteCurrentTask()" style="margin-right:auto;display:none;">삭제</button>
+      <button class="btn btn-secondary" onclick="closeTaskModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveTask()">저장</button>
+    </div>
   </div>
+</div>
 
-  <div id="infoBackdrop" class="modal-backdrop hidden">
-    <section class="task-modal info-modal" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
-      <div class="modal-header">
-        <div>
-          <p class="eyebrow">BBOOKS INFO</p>
-          <h2 id="infoModalTitle">비북스 중요 정보</h2>
-        </div>
-        <button id="closeInfoModal" class="icon-button" aria-label="닫기">×</button>
-      </div>
-      <div id="importantInfoContent" class="important-info"></div>
-    </section>
+<!-- 중요정보 수정 모달 -->
+<div class="modal-overlay hidden" id="infoModal">
+  <div class="modal">
+    <div class="modal-title">
+      <span>비북스 중요 정보 수정</span>
+      <button class="modal-close" onclick="closeInfoModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label>내용</label>
+      <textarea id="infoText" style="min-height:200px;" placeholder="채널 정보, 연락처, 중요 링크 등 공유할 내용을 자유롭게 입력하세요."></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeInfoModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveInfo()">저장</button>
+    </div>
   </div>
+</div>
 
-  <script>
-    const STORAGE_KEY = "bbooks-manager-tasks";
-    const INFO_STORAGE_KEY = "bbooks-manager-important-info";
+<div id="toast"></div>
 
-    const categories = [
-      { id: "all", label: "✅ 전체 업무", color: "#0A1F44" },
-      { id: "space", label: "📦 공간&환경", formLabel: "📦 공간 & 환경", color: "#8B6914" },
-      { id: "marketing", label: "📣 홍보&마케팅", formLabel: "📣 홍보 & 마케팅", color: "#1A6B3C" },
-      { id: "community", label: "🤝 점주&커뮤니티", formLabel: "🤝 점주 & 커뮤니티", color: "#1A4F8B" },
-      { id: "events", label: "🎪 모임&행사", formLabel: "🎪 모임 & 행사", color: "#7B2D8B" },
-      { id: "ops", label: "💰 운영&행정", formLabel: "💰 운영 & 행정", color: "#8B2020" },
-      { id: "external", label: "🔗 외부연결", formLabel: "🔗 외부 연결", color: "#2B7B8B" },
-      { id: "ideas", label: "💡 기획&아이디어", formLabel: "💡 기획 & 아이디어", color: "#6B5B2B" }
-    ];
+<script>
+// ── 상태 ──────────────────────────────────────────────────────
+let tasks = [];
+let currentTab = 'all';
+let currentEditId = null;
+let API_URL = localStorage.getItem('bbooksApiUrl') || '';
 
-    const categoryTabs = [
-      { id: "calendar", label: "📅 캘린더" },
-      ...categories
-    ];
+// ── 초기화 ────────────────────────────────────────────────────
+window.onload = () => {
+  if (API_URL) {
+    document.getElementById('setupBanner').classList.add('hidden');
+    document.getElementById('apiUrlInput').value = API_URL;
+    document.getElementById('syncStatus').textContent = '구글 시트 연결됨';
+    loadAll();
+  } else {
+    document.getElementById('apiUrlInput').value = '';
+    renderTasks(); // 빈 상태
+  }
+};
 
-    const priorityMap = {
-      "긴급": { rank: 1, dot: "🔴" },
-      "중요": { rank: 2, dot: "🟡" },
-      "일반": { rank: 3, dot: "🟢" }
-    };
+function saveApiUrl() {
+  const url = document.getElementById('apiUrlInput').value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    showToast('올바른 Apps Script URL을 입력하세요.', 'error');
+    return;
+  }
+  API_URL = url;
+  localStorage.setItem('bbooksApiUrl', url);
+  document.getElementById('setupBanner').classList.add('hidden');
+  document.getElementById('syncStatus').textContent = '구글 시트 연결됨';
+  loadAll();
+}
 
-    const initialTasks = [
-      {
-        id: "seed-bucheon-pay-approval",
-        title: "부천페이 가맹점 승인 확인",
-        category: "ops",
-        owner: "써든리",
-        priority: "긴급",
-        duration: "",
-        dueDate: "2026-05-25",
-        status: "진행중",
-        memo: "신청 완료. 승인까지 7일 소요 예상",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-mnuri-merchant",
-        title: "문화누리카드 가맹점 등록 확인",
-        category: "ops",
-        owner: "써든리",
-        priority: "긴급",
-        duration: "",
-        dueDate: "2026-05-20",
-        status: "진행중",
-        memo: "5/15 신청 완료. 결과 확인 필요",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-btalks-park-event",
-        title: "비톡스 박동수 작가 행사",
-        category: "events",
-        owner: "공동",
-        priority: "긴급",
-        duration: "",
-        dueDate: "2026-05-30",
-        status: "진행중",
-        memo: "오후 4-6시. 40명 모집. 사인회 포함",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-bbox-day",
-        title: "비박스 데이 (b.box day)",
-        category: "events",
-        owner: "호세",
-        priority: "긴급",
-        duration: "",
-        dueDate: "2026-05-30",
-        status: "진행중",
-        memo: "오전 10시-오후 3시. 셀러 20팀. 팝콘기계 대여 검토",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-july-flea-market",
-        title: "7월 플리마켓 준비 (해피니스북스토어 주최)",
-        category: "events",
-        owner: "공동",
-        priority: "중요",
-        duration: "",
-        dueDate: "2026-07-06",
-        status: "예정",
-        memo: "어린이 위주. 6월부터 홍보 시작. 부스별 QR 정산",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-bammilon-ep2",
-        title: "밤밀온 EP2 기획 (추리의 밤)",
-        category: "events",
-        owner: "호세",
-        priority: "중요",
-        duration: "",
-        dueDate: "2026-06-03",
-        status: "예정",
-        memo: "6/2(화)-6/3(수). 추리소설+영화+보드게임. 참가비 2만원",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-june-bmoim-recruit",
-        title: "6월 비모임 모집",
-        category: "events",
-        owner: "호세",
-        priority: "긴급",
-        duration: "",
-        dueDate: "2026-05-20",
-        status: "진행중",
-        memo: "5월 중순부터 모집 시작. 기존 점주 개인 컨택",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-yong-close-business",
-        title: "용서점 사업자 폐업 처리",
-        category: "ops",
-        owner: "써든리",
-        priority: "긴급",
-        duration: "",
-        dueDate: "2026-05-22",
-        status: "예정",
-        memo: "토스 이관 완료 후 폐업. YES24, CJ택배 계약자명 수정 필요",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-instagram-bbox",
-        title: "비북스 인스타 포스팅 - 비박스데이 홍보",
-        category: "marketing",
-        owner: "써든리",
-        priority: "중요",
-        duration: "",
-        dueDate: "2026-05-25",
-        status: "예정",
-        memo: "@b_books2026. 전단지 준비 필요",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-friday-keeper",
-        title: "금요지기 모집",
-        category: "community",
-        owner: "써든리",
-        priority: "중요",
-        duration: "",
-        dueDate: "2026-05-22",
-        status: "진행중",
-        memo: "현재 지원자 없음. 공고 재게시 필요",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-bzins",
-        title: "b.zins 제작",
-        category: "marketing",
-        owner: "써든리",
-        priority: "중요",
-        duration: "",
-        dueDate: "2026-05-31",
-        status: "진행중",
-        memo: "새미님 원고 완료. 다른 크루 원고 추가 요청",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-drink-sales",
-        title: "비북스 음료 판매 세팅",
-        category: "ops",
-        owner: "공동",
-        priority: "중요",
-        duration: "",
-        dueDate: "2026-05-31",
-        status: "예정",
-        memo: "커피메이트, 냉음료 쇼케이스, 냉동베이커리. 위생교육 필요",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-bathroom-dispenser",
-        title: "화장실 자동분사 디스펜서 설치",
-        category: "space",
-        owner: "호세",
-        priority: "일반",
-        duration: "",
-        dueDate: "2026-05-22",
-        status: "예정",
-        memo: "써든리와 5/16 논의 완료",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-bucheon-stamp-rally",
-        title: "부천 스탬프러리 기획",
-        category: "ideas",
-        owner: "공동",
-        priority: "일반",
-        duration: "",
-        dueDate: "2026-06-30",
-        status: "예정",
-        memo: "득템서가 제안. 국가유산 방문자 여권투어 참고",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-bbooks-tshirt",
-        title: "비북스 티셔츠 제작",
-        category: "marketing",
-        owner: "써든리",
-        priority: "일반",
-        duration: "",
-        dueDate: "",
-        status: "예정",
-        memo: "떡쇠 문의. 크루용. 해냄(곽덕용) 열전사",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-reading-point-transfer",
-        title: "독서포인트 가맹점 이관",
-        category: "ops",
-        owner: "써든리",
-        priority: "중요",
-        duration: "",
-        dueDate: "",
-        status: "예정",
-        memo: "용서점 폐업 후 비북스로 이관. 경기도서관 연락",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-naver-store",
-        title: "비스토어 네이버 스토어 개설",
-        category: "ops",
-        owner: "써든리",
-        priority: "중요",
-        duration: "",
-        dueDate: "",
-        status: "예정",
-        memo: "통신판매업 등록. 도장, 디자인, 공예 등 입점",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-bstamp-page",
-        title: "b.stamp 도장 주문 서비스 페이지",
-        category: "ideas",
-        owner: "호세",
-        priority: "중요",
-        duration: "",
-        dueDate: "",
-        status: "예정",
-        memo: "인스타 스탬프 계정 별도 운영. 얼굴형 도장은 사진 받아서 GPT 활용",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-park-jungmin-email",
-        title: "박정민 메일 발송",
-        category: "external",
-        owner: "써든리",
-        priority: "중요",
-        duration: "",
-        dueDate: "",
-        status: "예정",
-        memo: "비북스 협업 제안",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-june-btalks-author",
-        title: "비톡스 6월 작가 섭외",
-        category: "events",
-        owner: "공동",
-        priority: "중요",
-        duration: "",
-        dueDate: "",
-        status: "예정",
-        memo: "격월 진행. 조은숙교수(써든리), 이루리 북극곰출판사(호세) 검토 중",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-support-programs",
-        title: "지원사업 조사",
-        category: "ops",
-        owner: "공동",
-        priority: "중요",
-        duration: "",
-        dueDate: "",
-        status: "예정",
-        memo: "나라장터, 문화재단 등. 경기도 전역 독서문화 활성화 행사 참고",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-membership-plan",
-        title: "멤버십/구독제 기획",
-        category: "ideas",
-        owner: "공동",
-        priority: "일반",
-        duration: "",
-        dueDate: "",
-        status: "예정",
-        memo: "대관 프로모션 연계. 매장 외 수익원",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-crew-apron",
-        title: "크루용 앞치마 제작",
-        category: "space",
-        owner: "호세",
-        priority: "일반",
-        duration: "",
-        dueDate: "",
-        status: "예정",
-        memo: "구매 후 해냄에서 로고 열전사",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      },
-      {
-        id: "seed-extra-banners",
-        title: "현수막 추가 제작",
-        category: "space",
-        owner: "써든리",
-        priority: "일반",
-        duration: "",
-        dueDate: "",
-        status: "예정",
-        memo: "간판대용. 월드간판(010-6353-1881). 2층 1200*250, 지하 1000*1000",
-        updatedAt: "2026-05-18T00:00:00.000Z"
-      }
-    ];
+// ── API 호출 ──────────────────────────────────────────────────
+async function apiFetch(action, method = 'GET', body = null) {
+  if (!API_URL) return null;
+  const url = `${API_URL}?action=${action}`;
+  const opts = { method };
+  if (body) {
+    opts.method = 'POST';
+    opts.body = JSON.stringify(body);
+    opts.headers = { 'Content-Type': 'text/plain' }; // CORS 우회
+  }
+  const res = await fetch(url, opts);
+  return res.json();
+}
 
-    const defaultImportantInfo = [
-      {
-        id: "docs",
-        title: "📄 자주 쓰는 서류",
-        items: [
-          { id: "doc-business-license", label: "사업자등록증", value: "파일 링크 또는 메모" },
-          { id: "doc-bankbook", label: "통장사본", value: "파일 링크 또는 메모" },
-          { id: "doc-business-number", label: "사업자번호", value: "697-05-03470" }
-        ]
-      },
-      {
-        id: "sites",
-        title: "🔗 자주 접속하는 사이트",
-        items: [
-          { id: "site-instagram", label: "비북스 인스타", value: "https://instagram.com/b_books2026" },
-          { id: "site-bmoim", label: "비모임 사이트", value: "https://moim.bbooks.co.kr" },
-          { id: "site-btalks", label: "비톡스 사이트", value: "https://talks.bbooks.co.kr" },
-          { id: "site-bmoim-list", label: "비모임 참가자 명단", value: "https://docs.google.com/spreadsheets/d/1C64dZrpedaMX26oPPwDOkG1SJ-IvfADnIH5loE-qYQ4/htmlview" },
-          { id: "site-btalks-list", label: "비톡스 참가자 명단", value: "https://docs.google.com/spreadsheets/d/1xpeBQyp8BS874J_AgXYaE2X7gZJ043m_p4f4G7uOxjU/edit" },
-          { id: "site-facepass", label: "얼굴패스(입구관리)", value: "https://portal.heygreet.cloud/ko/login" },
-          { id: "site-sbiz24", label: "소상공인24", value: "https://sso.sbiz24.kr/" },
-          { id: "site-mnuri", label: "문화누리카드 신청", value: "https://www.mnuri.kr/merchmt/merchmtInsert.do" },
-          { id: "site-bucheon-pay", label: "부천페이 가맹점", value: "https://gmoney.or.kr/base/gmoney/apply/list" },
-          { id: "site-library-point", label: "경기도서관 독서포인트", value: "https://www.library.kr/ggl" }
-        ]
-      },
-      {
-        id: "payment",
-        title: "💳 계좌 & 결제 정보",
-        items: [
-          { id: "pay-kakao", label: "카카오뱅크", value: "3333-3725-33252 (비북스)" },
-          { id: "pay-bucheon", label: "부천페이", value: "9465-4443-2235-8945" },
-          { id: "pay-business-number", label: "사업자번호", value: "697-05-03470" },
-          { id: "pay-toss", label: "토스 매장고유번호", value: "2008193578" }
-        ]
-      }
-    ];
-
-    const state = {
-      tasks: [],
-      importantInfo: [],
-      activeTab: "calendar",
-      ownerFilter: "all",
-      viewMode: "month",
-      selectedDate: toDateInputValue(new Date()),
-      pendingAssignTaskId: null
-    };
-
-    const els = {
-      todayText: document.getElementById("todayText"),
-      tabMenu: document.getElementById("tabMenu"),
-      calendarView: document.getElementById("calendarView"),
-      listView: document.getElementById("listView"),
-      calendarGridWrap: document.getElementById("calendarGridWrap"),
-      calendarRangeTitle: document.getElementById("calendarRangeTitle"),
-      undatedList: document.getElementById("undatedList"),
-      taskList: document.getElementById("taskList"),
-      sortSelect: document.getElementById("sortSelect"),
-      statusFilter: document.getElementById("statusFilter"),
-      modalBackdrop: document.getElementById("modalBackdrop"),
-      taskForm: document.getElementById("taskForm"),
-      taskId: document.getElementById("taskId"),
-      taskTitle: document.getElementById("taskTitle"),
-      taskCategory: document.getElementById("taskCategory"),
-      taskOwner: document.getElementById("taskOwner"),
-      taskPriority: document.getElementById("taskPriority"),
-      taskDuration: document.getElementById("taskDuration"),
-      taskStatus: document.getElementById("taskStatus"),
-      taskDueDate: document.getElementById("taskDueDate"),
-      taskUndated: document.getElementById("taskUndated"),
-      taskMemo: document.getElementById("taskMemo"),
-      deleteTask: document.getElementById("deleteTask"),
-      modalTitle: document.getElementById("modalTitle"),
-      infoBackdrop: document.getElementById("infoBackdrop"),
-      importantInfoContent: document.getElementById("importantInfoContent"),
-      dayPanel: document.getElementById("dayPanel"),
-      dayPanelTitle: document.getElementById("dayPanelTitle"),
-      dayTaskList: document.getElementById("dayTaskList")
-    };
-
-    document.addEventListener("DOMContentLoaded", init);
-
-    function init() {
-      els.todayText.textContent = formatLongDate(new Date());
-      state.tasks = loadTasks();
-      state.importantInfo = loadImportantInfo();
-      renderTabs();
-      renderCategoryOptions();
-      bindEvents();
-      render();
+async function loadAll() {
+  document.getElementById('taskList').innerHTML = '<div class="loading"><div class="spinner"></div><br>불러오는 중...</div>';
+  try {
+    const [taskData, infoData] = await Promise.all([
+      apiFetch('getTasks'),
+      apiFetch('getInfo')
+    ]);
+    if (taskData && taskData.tasks) {
+      tasks = taskData.tasks;
     }
-
-    function bindEvents() {
-      document.querySelectorAll("[data-owner-filter]").forEach((button) => {
-        button.addEventListener("click", () => {
-          state.ownerFilter = button.dataset.ownerFilter;
-          document.querySelectorAll("[data-owner-filter]").forEach((item) => item.classList.remove("active"));
-          button.classList.add("active");
-          render();
-        });
-      });
-
-      document.querySelectorAll("[data-view-mode]").forEach((button) => {
-        button.addEventListener("click", () => {
-          state.viewMode = button.dataset.viewMode;
-          document.querySelectorAll("[data-view-mode]").forEach((item) => item.classList.remove("active"));
-          button.classList.add("active");
-          renderCalendar();
-        });
-      });
-
-      document.getElementById("openTaskModal").addEventListener("click", () => openTaskModal());
-      document.getElementById("openInfoModal").addEventListener("click", openInfoModal);
-      document.getElementById("closeInfoModal").addEventListener("click", closeInfoModal);
-      document.getElementById("addUndatedTask").addEventListener("click", () => openTaskModal({ undated: true }));
-      document.getElementById("closeTaskModal").addEventListener("click", closeTaskModal);
-      document.getElementById("cancelTaskForm").addEventListener("click", closeTaskModal);
-      document.getElementById("closeDayPanel").addEventListener("click", closeDayPanel);
-      document.getElementById("addTaskForDay").addEventListener("click", () => openTaskModal({ dueDate: state.selectedDate }));
-      els.sortSelect.addEventListener("change", renderList);
-      els.statusFilter.addEventListener("change", renderList);
-
-      els.taskUndated.addEventListener("change", () => {
-        els.taskDueDate.disabled = els.taskUndated.checked;
-        if (els.taskUndated.checked) els.taskDueDate.value = "";
-      });
-
-      els.modalBackdrop.addEventListener("click", (event) => {
-        if (event.target === els.modalBackdrop) closeTaskModal();
-      });
-
-      els.infoBackdrop.addEventListener("click", (event) => {
-        if (event.target === els.infoBackdrop) closeInfoModal();
-      });
-
-      els.taskForm.addEventListener("submit", saveTaskFromForm);
-      els.deleteTask.addEventListener("click", deleteCurrentTask);
+    if (infoData) {
+      document.getElementById('infoContent').textContent = infoData.content || '(내용 없음)';
     }
+    renderTasks();
+    updateStats();
+    showToast('업데이트됨', 'success');
+  } catch (e) {
+    showToast('불러오기 실패: ' + e.message, 'error');
+    renderTasks();
+  }
+}
 
-    function renderTabs() {
-      els.tabMenu.innerHTML = categoryTabs.map((tab) => (
-        `<button class="tab-button ${tab.id === state.activeTab ? "active" : ""}" data-tab="${tab.id}">${tab.label}</button>`
-      )).join("");
+// ── 탭 ───────────────────────────────────────────────────────
+function setTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderTasks();
+}
 
-      els.tabMenu.querySelectorAll("[data-tab]").forEach((button) => {
-        button.addEventListener("click", () => {
-          state.activeTab = button.dataset.tab;
-          els.tabMenu.querySelectorAll(".tab-button").forEach((item) => item.classList.remove("active"));
-          button.classList.add("active");
-          render();
-        });
-      });
-    }
+// ── 렌더링 ────────────────────────────────────────────────────
+function renderTasks() {
+  const status = document.getElementById('filterStatus')?.value || '';
+  const priority = document.getElementById('filterPriority')?.value || '';
+  const sort = document.getElementById('sortBy')?.value || 'created';
+  const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
 
-    function renderCategoryOptions() {
-      els.taskCategory.innerHTML = categories
-        .filter((category) => category.id !== "all")
-        .map((category) => `<option value="${category.id}">${category.formLabel}</option>`)
-        .join("");
-    }
+  let filtered = tasks.filter(t => {
+    if (currentTab !== 'all' && t.assignee !== currentTab) return false;
+    if (status && t.status !== status) return false;
+    if (priority && t.priority !== priority) return false;
+    if (search && !t.title.toLowerCase().includes(search) && !t.category.toLowerCase().includes(search)) return false;
+    return true;
+  });
 
-    function render() {
-      const isCalendar = state.activeTab === "calendar";
-      els.calendarView.classList.toggle("hidden", !isCalendar);
-      els.listView.classList.toggle("hidden", isCalendar);
-      document.querySelector(".view-toolbar").classList.toggle("hidden", !isCalendar);
+  const prioOrder = { '🔴 긴급': 0, '🟡 중요': 1, '🟢 일반': 2 };
+  filtered.sort((a, b) => {
+    if (sort === 'priority') return (prioOrder[a.priority] || 2) - (prioOrder[b.priority] || 2);
+    if (sort === 'due') return (a.due_date || 'z').localeCompare(b.due_date || 'z');
+    return b.created_at.localeCompare(a.created_at);
+  });
 
-      if (isCalendar) {
-        renderCalendar();
-        renderUndated();
-      } else {
-        renderList();
-      }
-    }
+  const container = document.getElementById('taskList');
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">📭</div>업무가 없습니다.<br><small>아래 버튼으로 업무를 추가하세요.</small></div>`;
+    return;
+  }
 
-    function renderCalendar() {
-      const today = new Date();
-      if (state.viewMode === "month") {
-        const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-        els.calendarRangeTitle.textContent = `${formatMonth(currentMonth)} · ${formatMonth(nextMonth)}`;
-        els.calendarGridWrap.className = "calendar-grid-wrap two-months";
-        els.calendarGridWrap.innerHTML = [currentMonth, nextMonth].map(renderMonthCalendar).join("");
-        return;
-      }
+  container.innerHTML = filtered.map(t => {
+    const dotClass = t.priority === '🔴 긴급' ? 'prio-urgent' : t.priority === '🟡 중요' ? 'prio-important' : 'prio-normal';
+    const assigneeClass = t.assignee === '호세' ? 'assignee-jose' : t.assignee === '써든리' ? 'assignee-sudden' : 'assignee-both';
+    const statusClass = `status-${t.status}`;
+    const isDone = t.status === '완료';
 
-      const selected = parseDate(state.selectedDate);
-      if (state.viewMode === "week") {
-        const days = getWeekDays(selected);
-        els.calendarRangeTitle.textContent = `${formatShortDate(days[0])} - ${formatShortDate(days[6])}`;
-        els.calendarGridWrap.className = "calendar-grid-wrap single-range";
-        els.calendarGridWrap.innerHTML = renderRangeCalendar("주간 업무", days);
-        return;
-      }
+    const today = new Date().toISOString().slice(0, 10);
+    const isOverdue = t.due_date && t.due_date < today && t.status !== '완료';
+    const dateStr = t.due_date ? `${t.due_date}${isOverdue ? ' ⚠' : ''}` : '';
 
-      els.calendarRangeTitle.textContent = formatLongDate(selected);
-      els.calendarGridWrap.className = "calendar-grid-wrap single-range";
-      els.calendarGridWrap.innerHTML = renderRangeCalendar("일간 업무", [selected]);
-    }
-
-    function renderMonthCalendar(monthDate) {
-      const year = monthDate.getFullYear();
-      const month = monthDate.getMonth();
-      const firstDay = new Date(year, month, 1);
-      const startOffset = firstDay.getDay();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
-      const cells = [];
-
-      for (let index = 0; index < totalCells; index++) {
-        const dayNumber = index - startOffset + 1;
-        if (dayNumber < 1 || dayNumber > daysInMonth) {
-          cells.push(`<div class="calendar-cell muted"></div>`);
-        } else {
-          const date = toDateInputValue(new Date(year, month, dayNumber));
-          cells.push(renderDateCell(date, dayNumber));
-        }
-      }
-
-      return `
-        <article class="month-card">
-          <h2>${formatMonth(monthDate)}</h2>
-          <div class="weekday-row">${["일", "월", "화", "수", "목", "금", "토"].map((day) => `<span>${day}</span>`).join("")}</div>
-          <div class="month-grid">${cells.join("")}</div>
-        </article>
-      `;
-    }
-
-    function renderRangeCalendar(title, days) {
-      return `
-        <article class="month-card range-card">
-          <h2>${title}</h2>
-          <div class="range-grid" style="--range-count: ${days.length}">
-            ${days.map((day) => renderDateCell(toDateInputValue(day), formatWeekdayLabel(day))).join("")}
-          </div>
-        </article>
-      `;
-    }
-
-    function renderDateCell(date, label) {
-      const tasks = getVisibleTasks().filter((task) => task.dueDate === date);
-      const isToday = date === toDateInputValue(new Date());
-
-      return `
-        <div class="calendar-cell ${isToday ? "today" : ""}" data-date="${date}" ondragover="event.preventDefault()" ondrop="assignDroppedTask(event, '${date}')" onclick="openDayPanel('${date}')">
-          <div class="date-number">${label}</div>
-          <div class="cell-tasks">
-            ${tasks.slice(0, 4).map(renderCalendarTask).join("")}
-            ${tasks.length > 4 ? `<span class="more-count">+${tasks.length - 4}개 더</span>` : ""}
-          </div>
-        </div>
-      `;
-    }
-
-    function renderCalendarTask(task) {
-      const category = getCategory(task.category);
-      return `
-        <button class="mini-task ${task.status === "완료" ? "done" : ""}" onclick="event.stopPropagation(); openTaskModal({ id: '${task.id}' })">
-          <span class="category-dot" style="background:${category.color}"></span>
-          <span>${escapeHtml(task.title)}</span>
-        </button>
-      `;
-    }
-
-    function renderUndated() {
-      const tasks = getVisibleTasks().filter((task) => !task.dueDate);
-      els.undatedList.innerHTML = tasks.length
-        ? tasks.map(renderTaskCard).join("")
-        : `<p class="empty-state">날짜 미정 업무가 없습니다.</p>`;
-      attachTaskCardEvents();
-    }
-
-    function renderList() {
-      let tasks = getVisibleTasks();
-      const status = els.statusFilter.value;
-      const sortBy = els.sortSelect.value;
-
-      if (status !== "all") {
-        tasks = tasks.filter((task) => task.status === status);
-      }
-
-      tasks = [...tasks].sort((a, b) => {
-        if (sortBy === "priority") return priorityMap[a.priority].rank - priorityMap[b.priority].rank;
-        if (sortBy === "owner") return a.owner.localeCompare(b.owner, "ko");
-        return (a.dueDate || "9999-12-31").localeCompare(b.dueDate || "9999-12-31");
-      });
-
-      els.taskList.innerHTML = tasks.length
-        ? tasks.map(renderTaskCard).join("")
-        : `<p class="empty-state">표시할 업무가 없습니다.</p>`;
-      attachTaskCardEvents();
-    }
-
-    function renderTaskCard(task) {
-      const category = getCategory(task.category);
-      const dueText = task.dueDate ? formatShortDate(parseDate(task.dueDate)) : "날짜 미정";
-      return `
-        <article class="task-card ${task.status === "완료" ? "completed" : ""}" draggable="${!task.dueDate}" data-task-id="${task.id}">
-          <div class="task-card-top">
-            <span class="category-badge" style="--category-color:${category.color}">${category.formLabel}</span>
-            <span class="priority">${priorityMap[task.priority].dot} ${task.priority}</span>
-          </div>
-          <h3>${escapeHtml(task.title)}</h3>
+    return `
+      <div class="task-card ${isDone ? 'done' : ''}" onclick="openTaskModal('${t.id}')">
+        <div class="task-priority-dot ${dotClass}"></div>
+        <div class="task-content">
+          <div class="task-title">${escHtml(t.title)}</div>
           <div class="task-meta">
-            <span>담당 ${task.owner}</span>
-            <span>${dueText}</span>
-            <span>${task.duration || "소요시간 미정"}</span>
-            <span>${task.status}</span>
+            ${t.category ? `<span class="badge">${escHtml(t.category)}</span>` : ''}
+            <span class="badge ${assigneeClass}">${escHtml(t.assignee)}</span>
+            <span class="badge ${statusClass}">${escHtml(t.status)}</span>
+            ${t.estimated_hours ? `<span class="badge">⏱ ${escHtml(t.estimated_hours)}</span>` : ''}
           </div>
-          ${task.memo ? `<p class="task-memo">${escapeHtml(task.memo)}</p>` : ""}
-        </article>
-      `;
-    }
-
-    function attachTaskCardEvents() {
-      document.querySelectorAll(".task-card").forEach((card) => {
-        const taskId = card.dataset.taskId;
-        card.addEventListener("click", () => {
-          const task = state.tasks.find((item) => item.id === taskId);
-          if (task && !task.dueDate) {
-            state.pendingAssignTaskId = taskId;
-            document.body.classList.add("assigning-date");
-          } else {
-            openTaskModal({ id: taskId });
-          }
-        });
-        card.addEventListener("dragstart", (event) => {
-          event.dataTransfer.setData("text/plain", taskId);
-        });
-      });
-    }
-
-    function openDayPanel(date) {
-      state.selectedDate = date;
-      if (state.pendingAssignTaskId) {
-        assignTaskDate(state.pendingAssignTaskId, date);
-        state.pendingAssignTaskId = null;
-        document.body.classList.remove("assigning-date");
-        return;
-      }
-
-      els.dayPanelTitle.textContent = formatLongDate(parseDate(date));
-      const tasks = getVisibleTasks().filter((task) => task.dueDate === date);
-      els.dayTaskList.innerHTML = tasks.length
-        ? tasks.map(renderTaskCard).join("")
-        : `<p class="empty-state">이 날짜의 업무가 없습니다.</p>`;
-      attachTaskCardEvents();
-      els.dayPanel.classList.add("open");
-    }
-
-    function closeDayPanel() {
-      els.dayPanel.classList.remove("open");
-    }
-
-    function assignDroppedTask(event, date) {
-      event.preventDefault();
-      event.stopPropagation();
-      const taskId = event.dataTransfer.getData("text/plain");
-      assignTaskDate(taskId, date);
-    }
-
-    function assignTaskDate(taskId, date) {
-      state.tasks = state.tasks.map((task) => task.id === taskId ? { ...task, dueDate: date } : task);
-      persistTasks();
-      render();
-      openDayPanel(date);
-    }
-
-    function openTaskModal(options = {}) {
-      const task = options.id ? state.tasks.find((item) => item.id === options.id) : null;
-      els.taskForm.reset();
-      els.taskId.value = task?.id || "";
-      els.taskTitle.value = task?.title || "";
-      els.taskCategory.value = task?.category || "space";
-      els.taskOwner.value = task?.owner || "호세";
-      els.taskPriority.value = task?.priority || "일반";
-      els.taskDuration.value = task?.duration || "";
-      els.taskStatus.value = task?.status || "예정";
-      els.taskDueDate.value = task?.dueDate || options.dueDate || "";
-      els.taskUndated.checked = Boolean(options.undated || (task && !task.dueDate));
-      els.taskDueDate.disabled = els.taskUndated.checked;
-      els.taskMemo.value = task?.memo || "";
-      els.modalTitle.textContent = task ? "업무 수정" : "업무 추가";
-      els.deleteTask.classList.toggle("hidden", !task);
-      els.modalBackdrop.classList.remove("hidden");
-      els.taskTitle.focus();
-    }
-
-    function closeTaskModal() {
-      els.modalBackdrop.classList.add("hidden");
-    }
-
-    function saveTaskFromForm(event) {
-      event.preventDefault();
-      const id = els.taskId.value || crypto.randomUUID();
-      const task = {
-        id,
-        title: els.taskTitle.value.trim(),
-        category: els.taskCategory.value,
-        owner: els.taskOwner.value,
-        priority: els.taskPriority.value,
-        duration: els.taskDuration.value.trim(),
-        dueDate: els.taskUndated.checked ? "" : els.taskDueDate.value,
-        status: els.taskStatus.value,
-        memo: els.taskMemo.value.trim(),
-        updatedAt: new Date().toISOString()
-      };
-
-      if (!task.title) return;
-
-      const exists = state.tasks.some((item) => item.id === id);
-      state.tasks = exists
-        ? state.tasks.map((item) => item.id === id ? task : item)
-        : [...state.tasks, task];
-
-      persistTasks();
-      closeTaskModal();
-      render();
-      if (task.dueDate) openDayPanel(task.dueDate);
-    }
-
-    function deleteCurrentTask() {
-      const id = els.taskId.value;
-      if (!id || !confirm("이 업무를 삭제할까요?")) return;
-      state.tasks = state.tasks.filter((task) => task.id !== id);
-      persistTasks();
-      closeTaskModal();
-      closeDayPanel();
-      render();
-    }
-
-    function openInfoModal() {
-      renderImportantInfo();
-      els.infoBackdrop.classList.remove("hidden");
-    }
-
-    function closeInfoModal() {
-      els.infoBackdrop.classList.add("hidden");
-    }
-
-    function renderImportantInfo() {
-      els.importantInfoContent.innerHTML = state.importantInfo.map((section) => `
-        <article class="info-section">
-          <div class="info-section-header">
-            <h3>${section.title}</h3>
-            <button class="ghost-button small-button" onclick="addInfoItem('${section.id}')">+ 항목 추가</button>
-          </div>
-          <div class="info-list">
-            ${section.items.map((item) => renderInfoItem(section.id, item)).join("")}
-          </div>
-        </article>
-      `).join("");
-    }
-
-    function renderInfoItem(sectionId, item) {
-      const value = escapeHtml(item.value);
-      const valueMarkup = isUrl(item.value)
-        ? `<a href="${value}" target="_blank" rel="noopener noreferrer">${value}</a>`
-        : `<span>${value}</span>`;
-
-      return `
-        <div class="info-item">
-          <div>
-            <strong>${escapeHtml(item.label)}</strong>
-            ${valueMarkup}
-          </div>
-          <button class="icon-button edit-button" onclick="editInfoItem('${sectionId}', '${item.id}')" aria-label="${escapeHtml(item.label)} 수정">✏️</button>
+          ${t.memo ? `<div style="font-size:12px;color:var(--text-muted);margin-top:5px;">${escHtml(t.memo).slice(0, 60)}${t.memo.length > 60 ? '…' : ''}</div>` : ''}
         </div>
-      `;
+        <div class="task-date ${isOverdue ? 'overdue' : ''}">${dateStr}</div>
+      </div>`;
+  }).join('');
+}
+
+function updateStats() {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('statTotal').textContent = tasks.length;
+  document.getElementById('statInProgress').textContent = tasks.filter(t => t.status === '진행중').length;
+  document.getElementById('statDone').textContent = tasks.filter(t => t.status === '완료').length;
+  document.getElementById('statOverdue').textContent = tasks.filter(t => t.due_date && t.due_date < today && t.status !== '완료').length;
+}
+
+// ── 업무 모달 ─────────────────────────────────────────────────
+function openTaskModal(id = null) {
+  currentEditId = id;
+  const modal = document.getElementById('taskModal');
+  modal.classList.remove('hidden');
+
+  if (id) {
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    document.getElementById('modalTitle').textContent = '업무 수정';
+    document.getElementById('taskId').value = t.id;
+    document.getElementById('taskTitle').value = t.title;
+    document.getElementById('taskCategory').value = t.category;
+    document.getElementById('taskAssignee').value = t.assignee;
+    document.getElementById('taskPriority').value = t.priority;
+    document.getElementById('taskHours').value = t.estimated_hours;
+    document.getElementById('taskStatus').value = t.status;
+    document.getElementById('taskDueDate').value = t.due_date;
+    document.getElementById('taskMemo').value = t.memo;
+    document.getElementById('deleteBtn').style.display = 'block';
+  } else {
+    document.getElementById('modalTitle').textContent = '업무 추가';
+    document.getElementById('taskId').value = '';
+    document.getElementById('taskTitle').value = '';
+    document.getElementById('taskCategory').value = '';
+    document.getElementById('taskAssignee').value = '호세';
+    document.getElementById('taskPriority').value = '🟢 일반';
+    document.getElementById('taskHours').value = '';
+    document.getElementById('taskStatus').value = '예정';
+    document.getElementById('taskDueDate').value = '';
+    document.getElementById('taskMemo').value = '';
+    document.getElementById('deleteBtn').style.display = 'none';
+  }
+}
+
+function closeTaskModal() {
+  document.getElementById('taskModal').classList.add('hidden');
+  currentEditId = null;
+}
+
+async function saveTask() {
+  const title = document.getElementById('taskTitle').value.trim();
+  if (!title) { showToast('제목을 입력하세요.', 'error'); return; }
+
+  const task = {
+    id: document.getElementById('taskId').value,
+    title,
+    category: document.getElementById('taskCategory').value,
+    assignee: document.getElementById('taskAssignee').value,
+    priority: document.getElementById('taskPriority').value,
+    estimated_hours: document.getElementById('taskHours').value,
+    status: document.getElementById('taskStatus').value,
+    due_date: document.getElementById('taskDueDate').value,
+    memo: document.getElementById('taskMemo').value,
+  };
+
+  closeTaskModal();
+
+  if (!API_URL) {
+    // 로컬 전용 모드
+    if (task.id) {
+      const idx = tasks.findIndex(t => t.id === task.id);
+      if (idx !== -1) tasks[idx] = { ...tasks[idx], ...task };
+    } else {
+      task.id = 'local_' + Date.now();
+      task.created_at = new Date().toISOString();
+      tasks.push(task);
     }
+    renderTasks();
+    updateStats();
+    showToast('저장됨 (로컬 전용 — 구글 시트 미연결)', 'success');
+    return;
+  }
 
-    function addInfoItem(sectionId) {
-      const label = prompt("항목 이름을 입력하세요.");
-      if (!label) return;
-      const value = prompt("내용 또는 링크를 입력하세요.") || "";
-      state.importantInfo = state.importantInfo.map((section) => {
-        if (section.id !== sectionId) return section;
-        return {
-          ...section,
-          items: [
-            ...section.items,
-            {
-              id: `info-${Date.now()}`,
-              label: label.trim(),
-              value: value.trim()
-            }
-          ]
-        };
-      });
-      persistImportantInfo();
-      renderImportantInfo();
+  try {
+    if (task.id) {
+      await apiFetch('updateTask', 'POST', task);
+    } else {
+      await apiFetch('addTask', 'POST', task);
     }
+    await loadAll();
+    showToast('저장 완료!', 'success');
+  } catch (e) {
+    showToast('저장 실패: ' + e.message, 'error');
+  }
+}
 
-    function editInfoItem(sectionId, itemId) {
-      const section = state.importantInfo.find((infoSection) => infoSection.id === sectionId);
-      const item = section?.items.find((infoItem) => infoItem.id === itemId);
-      if (!item) return;
+async function deleteCurrentTask() {
+  if (!confirm('이 업무를 삭제할까요?')) return;
+  const id = document.getElementById('taskId').value;
+  closeTaskModal();
 
-      const label = prompt("항목 이름을 수정하세요.", item.label);
-      if (!label) return;
-      const value = prompt("내용 또는 링크를 수정하세요.", item.value);
-      if (value === null) return;
+  if (!API_URL) {
+    tasks = tasks.filter(t => t.id !== id);
+    renderTasks();
+    updateStats();
+    showToast('삭제됨', 'success');
+    return;
+  }
 
-      state.importantInfo = state.importantInfo.map((infoSection) => {
-        if (infoSection.id !== sectionId) return infoSection;
-        return {
-          ...infoSection,
-          items: infoSection.items.map((infoItem) => (
-            infoItem.id === itemId
-              ? { ...infoItem, label: label.trim(), value: value.trim() }
-              : infoItem
-          ))
-        };
-      });
-      persistImportantInfo();
-      renderImportantInfo();
-    }
+  try {
+    await apiFetch(`deleteTask&id=${id}`);
+    await loadAll();
+    showToast('삭제 완료', 'success');
+  } catch (e) {
+    showToast('삭제 실패: ' + e.message, 'error');
+  }
+}
 
-    function getVisibleTasks() {
-      return state.tasks.filter((task) => {
-        const ownerMatches = state.ownerFilter === "all" || task.owner === state.ownerFilter || task.owner === "공동";
-        const categoryMatches = state.activeTab === "calendar" || state.activeTab === "all" || task.category === state.activeTab;
-        return ownerMatches && categoryMatches;
-      });
-    }
+// ── 중요 정보 모달 ────────────────────────────────────────────
+function openInfoModal() {
+  document.getElementById('infoText').value = document.getElementById('infoContent').textContent;
+  document.getElementById('infoModal').classList.remove('hidden');
+}
+function closeInfoModal() {
+  document.getElementById('infoModal').classList.add('hidden');
+}
 
-    function loadTasks() {
-      const savedTasks = localStorage.getItem(STORAGE_KEY);
-      if (savedTasks === null) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialTasks));
-        return [...initialTasks];
-      }
+async function saveInfo() {
+  const content = document.getElementById('infoText').value;
+  document.getElementById('infoContent').textContent = content || '(내용 없음)';
+  closeInfoModal();
 
-      try {
-        return JSON.parse(savedTasks) || [];
-      } catch (error) {
-        console.warn("업무 데이터를 불러오지 못했습니다.", error);
-        return [];
-      }
-    }
+  if (!API_URL) {
+    localStorage.setItem('bbooksInfo', content);
+    showToast('저장됨 (로컬 전용)', 'success');
+    return;
+  }
 
-    function persistTasks() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.tasks));
-    }
+  try {
+    await apiFetch('saveInfo', 'POST', { content });
+    showToast('저장 완료!', 'success');
+  } catch (e) {
+    showToast('저장 실패: ' + e.message, 'error');
+  }
+}
 
-    function loadImportantInfo() {
-      const savedInfo = localStorage.getItem(INFO_STORAGE_KEY);
-      if (savedInfo === null) {
-        const defaultInfo = cloneImportantInfo(defaultImportantInfo);
-        localStorage.setItem(INFO_STORAGE_KEY, JSON.stringify(defaultInfo));
-        return defaultInfo;
-      }
+// ── 유틸 ─────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-      try {
-        return JSON.parse(savedInfo) || cloneImportantInfo(defaultImportantInfo);
-      } catch (error) {
-        console.warn("중요 정보를 불러오지 못했습니다.", error);
-        return cloneImportantInfo(defaultImportantInfo);
-      }
-    }
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  setTimeout(() => { el.className = ''; }, 2800);
+}
 
-    function persistImportantInfo() {
-      localStorage.setItem(INFO_STORAGE_KEY, JSON.stringify(state.importantInfo));
-    }
-
-    function cloneImportantInfo(info) {
-      return JSON.parse(JSON.stringify(info));
-    }
-
-    function getCategory(id) {
-      return categories.find((category) => category.id === id) || categories[1];
-    }
-
-    function toDateInputValue(date) {
-      const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-      return offsetDate.toISOString().slice(0, 10);
-    }
-
-    function parseDate(value) {
-      const [year, month, day] = value.split("-").map(Number);
-      return new Date(year, month - 1, day);
-    }
-
-    function getWeekDays(date) {
-      const start = new Date(date);
-      start.setDate(date.getDate() - date.getDay());
-      return Array.from({ length: 7 }, (_, index) => {
-        const next = new Date(start);
-        next.setDate(start.getDate() + index);
-        return next;
-      });
-    }
-
-    function formatLongDate(date) {
-      return new Intl.DateTimeFormat("ko-KR", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        weekday: "long"
-      }).format(date);
-    }
-
-    function formatShortDate(date) {
-      return new Intl.DateTimeFormat("ko-KR", {
-        month: "short",
-        day: "numeric"
-      }).format(date);
-    }
-
-    function formatMonth(date) {
-      return new Intl.DateTimeFormat("ko-KR", {
-        year: "numeric",
-        month: "long"
-      }).format(date);
-    }
-
-    function formatWeekdayLabel(date) {
-      const day = new Intl.DateTimeFormat("ko-KR", { weekday: "short" }).format(date);
-      return `${date.getDate()}일 ${day}`;
-    }
-
-    function isUrl(value) {
-      return /^https?:\/\//.test(value);
-    }
-
-    function escapeHtml(value) {
-      return value.replace(/[&<>"']/g, (char) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#039;"
-      }[char]));
-    }
-  </script>
+// ESC로 모달 닫기
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeTaskModal();
+    closeInfoModal();
+  }
+});
+</script>
 </body>
 </html>
