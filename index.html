@@ -467,10 +467,22 @@ body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-
 .info-sec h4 { font-size: 12px; font-weight: 800; color: var(--navy); margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
 .ii-list { display: flex; flex-direction: column; gap: 2px; }
 .ii { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px dashed var(--border); font-size: 12px; transition: background .12s; }
-.ii.ii-dragging { opacity: .45; }
 .ii.ii-over { background: #eff4ff; border-radius: 6px; }
-.ii-grip { flex-shrink: 0; padding: 0 2px; color: #9aa3b2; font-size: 14px; line-height: 1; cursor: grab; user-select: none; touch-action: none; }
+.ii-grip {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  color: #9aa3b2;
+  font-size: 14px;
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  -webkit-user-drag: element;
+}
 .ii-grip:active { cursor: grabbing; color: var(--navy); }
+.ii.ii-dragging { opacity: .5; background: #f8fafc; }
+.ii.ii-drop-before { box-shadow: inset 0 3px 0 var(--navy); }
+.ii.ii-drop-after { box-shadow: inset 0 -3px 0 var(--navy); }
 .ii-l { color: var(--sub); min-width: 110px; flex-shrink: 0; font-size: 11px; }
 .ii-v { flex: 1; word-break: break-all; }
 .ii-v a { color: var(--navy); text-decoration: none; }
@@ -1121,8 +1133,8 @@ function renderInfoBody() {
     '<div class="info-sec"><h4>' + s.t + '</h4>' +
     '<div class="ii-list" data-section="' + s.k + '">' +
     (infoData[s.k]||[]).map((item, i) =>
-      '<div class="ii" id="ii-' + s.k + '-' + i + '" draggable="true" data-section="' + s.k + '" data-index="' + i + '">' +
-      '<span class="ii-grip" title="드래그하여 순서 변경">⠿</span>' +
+      '<div class="ii" id="ii-' + s.k + '-' + i + '" data-section="' + s.k + '" data-index="' + i + '">' +
+      '<span class="ii-grip" draggable="true" title="드래그하여 순서 변경">⠿</span>' +
       '<span class="ii-l">' + esc(item.label) + '</span>' +
       '<span class="ii-v">' +
       (item.val && item.val.startsWith('http')
@@ -1142,58 +1154,102 @@ function renderInfoBody() {
 let infoDrag = null;
 
 function initInfoDragDrop() {
-  qsa('.ii-list .ii').forEach(row => {
-    row.addEventListener('dragstart', onInfoDragStart);
-    row.addEventListener('dragend', onInfoDragEnd);
-    row.addEventListener('dragover', onInfoDragOver);
-    row.addEventListener('dragleave', onInfoDragLeave);
-    row.addEventListener('drop', onInfoDrop);
+  qsa('.ii-grip').forEach(grip => {
+    grip.addEventListener('dragstart', onInfoDragStart);
+    grip.addEventListener('dragend', onInfoDragEnd);
+  });
+  qsa('.ii-list').forEach(list => {
+    list.addEventListener('dragenter', onInfoListDragEnter);
+    list.addEventListener('dragover', onInfoListDragOver);
+    list.addEventListener('dragleave', onInfoListDragLeave);
+    list.addEventListener('drop', onInfoListDrop);
   });
 }
 
+function clearInfoDragMarkers() {
+  qsa('.ii').forEach(row => row.classList.remove('ii-dragging', 'ii-over', 'ii-drop-before', 'ii-drop-after'));
+}
+
+function getInfoRowFromGrip(grip) {
+  return grip.closest('.ii');
+}
+
 function onInfoDragStart(e) {
-  if (!e.target.closest('.ii-grip')) {
-    e.preventDefault();
-    return;
-  }
-  const row = e.currentTarget;
-  infoDrag = { section: row.dataset.section, from: Number(row.dataset.index) };
+  const row = getInfoRowFromGrip(e.currentTarget);
+  if (!row) return;
+  infoDrag = {
+    section: row.dataset.section,
+    from: Number(row.dataset.index),
+    rowId: row.id
+  };
   row.classList.add('ii-dragging');
   e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', infoDrag.section);
+  e.dataTransfer.setData('text/plain', infoDrag.section + ':' + infoDrag.from);
+  if (e.dataTransfer.setDragImage) {
+    e.dataTransfer.setDragImage(row, 16, 16);
+  }
 }
 
 function onInfoDragEnd() {
-  qsa('.ii').forEach(row => row.classList.remove('ii-dragging', 'ii-over'));
+  clearInfoDragMarkers();
   infoDrag = null;
 }
 
-function onInfoDragOver(e) {
+function onInfoListDragEnter(e) {
   if (!infoDrag) return;
-  const row = e.currentTarget;
-  if (row.dataset.section !== infoDrag.section) return;
+  e.preventDefault();
+}
+
+function onInfoListDragOver(e) {
+  if (!infoDrag) return;
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
-  qsa('.ii[data-section="' + infoDrag.section + '"]').forEach(r => r.classList.remove('ii-over'));
-  row.classList.add('ii-over');
+  const row = e.target.closest('.ii');
+  if (!row || row.dataset.section !== infoDrag.section) return;
+
+  const rect = row.getBoundingClientRect();
+  const after = e.clientY > rect.top + rect.height / 2;
+  qsa('.ii[data-section="' + infoDrag.section + '"]').forEach(r => {
+    r.classList.remove('ii-over', 'ii-drop-before', 'ii-drop-after');
+  });
+  row.classList.add('ii-over', after ? 'ii-drop-after' : 'ii-drop-before');
+  infoDrag.insertAfter = after;
+  infoDrag.hoverIndex = Number(row.dataset.index);
 }
 
-function onInfoDragLeave(e) {
-  const row = e.currentTarget;
-  if (!row.contains(e.relatedTarget)) row.classList.remove('ii-over');
+function onInfoListDragLeave(e) {
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    clearInfoDragMarkers();
+  }
 }
 
-function onInfoDrop(e) {
+function onInfoListDrop(e) {
   e.preventDefault();
+  e.stopPropagation();
   if (!infoDrag) return;
-  const row = e.currentTarget;
-  const section = row.dataset.section;
-  const to = Number(row.dataset.index);
+
+  const row = e.target.closest('.ii');
+  if (!row || row.dataset.section !== infoDrag.section) return;
+
+  const section = infoDrag.section;
   const from = infoDrag.from;
-  if (section !== infoDrag.section || from === to) return;
+  const list = row.closest('.ii-list');
+  const rows = Array.from(list.querySelectorAll('.ii'));
+  let to = rows.indexOf(row);
+  if (infoDrag.insertAfter) to += 1;
+  if (from < to) to -= 1;
+
+  if (from === to) {
+    clearInfoDragMarkers();
+    infoDrag = null;
+    return;
+  }
+
   const arr = infoData[section];
   const [item] = arr.splice(from, 1);
   arr.splice(to, 0, item);
+  clearInfoDragMarkers();
+  infoDrag = null;
   renderInfoBody();
 }
 
