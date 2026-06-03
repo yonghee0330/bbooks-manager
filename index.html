@@ -66,36 +66,7 @@ body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-
 .dot { width: 7px; height: 7px; border-radius: 50%; background: #f87171; flex-shrink: 0; transition: background .3s; }
 .dot.on { background: #4ade80; }
 
-/* ── API 배너 ── */
-#banner {
-  background: #fffbeb;
-  border-bottom: 2px solid #fcd34d;
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 12px;
-  color: #78350f;
-}
-#banner.hidden { display: none; }
-#banner input {
-  flex: 1; min-width: 200px; max-width: 460px;
-  padding: 5px 9px;
-  border: 1px solid #fcd34d;
-  border-radius: 6px;
-  font-size: 12px;
-}
-#banner button {
-  padding: 5px 12px;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.b-conn { background: var(--navy); color: #fff; }
-.b-skip { background: #d1d5db; color: #374151; }
+/* API 배너 제거 — Firebase 사용 */
 
 /* ── 담당자 탭 ── */
 #abar {
@@ -494,7 +465,12 @@ body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-
 /* ── Info 모달 ── */
 .info-sec { margin-bottom: 18px; }
 .info-sec h4 { font-size: 12px; font-weight: 800; color: var(--navy); margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
-.ii { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px dashed var(--border); font-size: 12px; }
+.ii-list { display: flex; flex-direction: column; gap: 2px; }
+.ii { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px dashed var(--border); font-size: 12px; transition: background .12s; }
+.ii.ii-dragging { opacity: .45; }
+.ii.ii-over { background: #eff4ff; border-radius: 6px; }
+.ii-grip { flex-shrink: 0; padding: 0 2px; color: #9aa3b2; font-size: 14px; line-height: 1; cursor: grab; user-select: none; touch-action: none; }
+.ii-grip:active { cursor: grabbing; color: var(--navy); }
 .ii-l { color: var(--sub); min-width: 110px; flex-shrink: 0; font-size: 11px; }
 .ii-v { flex: 1; word-break: break-all; }
 .ii-v a { color: var(--navy); text-decoration: none; }
@@ -547,19 +523,12 @@ body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-
     <button class="btn-hdr btn-green" onclick="openTask()">+ 업무 추가</button>
     <div class="sync-wrap">
       <div class="dot" id="dot"></div>
-      <span id="conn-txt">미연결</span>
+      <span id="conn-txt">연결 중...</span>
     </div>
-    <button class="btn-hdr btn-ghost" onclick="sync()" id="syncBtn">↻</button>
   </div>
 </div>
 
-<!-- API 배너 -->
-<div id="banner">
-  <span>⚠️ Apps Script URL을 연결하면 구글 시트와 공유됩니다</span>
-  <input id="apiInput" type="text" placeholder="https://script.google.com/macros/s/.../exec"/>
-  <button class="b-conn" onclick="connect()">연결</button>
-  <button class="b-skip" onclick="skip()">로컬만 사용</button>
-</div>
+
 
 <!-- 담당자 -->
 <div id="abar">
@@ -685,50 +654,55 @@ body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-
 
 <div id="toast"></div>
 
-<script>
+<script type="module">
 // ══════════════════════════════════════════════════════════════
-// 상수
+//  🟢 BBOOKS MANAGER — Firebase Firestore 연동
 // ══════════════════════════════════════════════════════════════
-var CAT_COLOR = {
+import { initializeApp }                      from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+import { getFirestore, collection, doc,
+         addDoc, updateDoc, deleteDoc,
+         setDoc, getDoc, getDocs,
+         onSnapshot, query, orderBy,
+         serverTimestamp }                    from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+
+// ── Firebase 설정 ─────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            'AIzaSyBM_OKHPFnItC0HWMk7qc3JD3TL7BVv3DQ',
+  authDomain:        'bbooks-manager.firebaseapp.com',
+  projectId:         'bbooks-manager',
+  storageBucket:     'bbooks-manager.firebasestorage.app',
+  messagingSenderId: '413400855182',
+  appId:             '1:413400855182:web:e30f948bade11180660fdf'
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// ── 상수 ──────────────────────────────────────────────────────
+const CAT_COLOR = {
   '📦 공간&환경':'#8B6914','📣 홍보&마케팅':'#1A6B3C',
   '🤝 점주&커뮤니티':'#1A4F8B','🎪 모임&행사':'#7B2D8B',
   '💰 운영&행정':'#8B2020','🔗 외부연결':'#2B7B8B','💡 기획&아이디어':'#6B5B2B'
 };
-var P_COLOR = {'🔴 긴급':'#dc2626','🟡 중요':'#d97706','🟢 일반':'#16a34a'};
-var P_ORDER = {'🔴 긴급':0,'🟡 중요':1,'🟢 일반':2};
-var DOW = ['일','월','화','수','목','금','토'];
-var MON = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+const P_COLOR = {'🔴 긴급':'#dc2626','🟡 중요':'#d97706','🟢 일반':'#16a34a'};
+const P_ORDER = {'🔴 긴급':0,'🟡 중요':1,'🟢 일반':2};
+const DOW = ['일','월','화','수','목','금','토'];
+const MON = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
-// ══════════════════════════════════════════════════════════════
-// 상태
-// ══════════════════════════════════════════════════════════════
-var API = '';
-var tasks = [];
-var infoData = null;
-var selDate = null;
-var editId = null;
-var curA = '전체';
-var curCat = 'all';
-var curView = 'month';
-
-// 기본 중요 정보
-var DEFAULT_INFO = {
+const DEFAULT_INFO = {
   docs:[
     {label:'사업자등록증', val:'파일 위치 또는 링크 입력'},
     {label:'통장사본',     val:'파일 위치 또는 링크 입력'},
     {label:'사업자번호',   val:'697-05-03470'}
   ],
   links:[
-    {label:'비북스 인스타',       val:'https://instagram.com/b_books2026'},
-    {label:'비모임 사이트',        val:'https://moim.bbooks.co.kr'},
-    {label:'비톡스 사이트',        val:'https://talks.bbooks.co.kr'},
-    {label:'비모임 참가자 명단',   val:'https://docs.google.com/spreadsheets/d/1C64dZrpedaMX26oPPwDOkG1SJ-IvfADnIH5loE-qYQ4/htmlview'},
-    {label:'비톡스 참가자 명단',   val:'https://docs.google.com/spreadsheets/d/1xpeBQyp8BS874J_AgXYaE2X7gZJ043m_p4f4G7uOxjU/edit'},
-    {label:'얼굴패스(입구관리)',   val:'https://portal.heygreet.cloud/ko/login'},
-    {label:'소상공인24',           val:'https://sso.sbiz24.kr/'},
-    {label:'문화누리카드 신청',    val:'https://www.mnuri.kr/merchmt/merchmtInsert.do'},
-    {label:'부천페이 가맹점',      val:'https://gmoney.or.kr/base/gmoney/apply/list'},
-    {label:'경기도서관 독서포인트',val:'https://www.library.kr/ggl'}
+    {label:'비북스 인스타',        val:'https://instagram.com/b_books2026'},
+    {label:'비모임 사이트',         val:'https://moim.bbooks.co.kr'},
+    {label:'비모임 참가자 명단',    val:'https://docs.google.com/spreadsheets/d/1C64dZrpedaMX26oPPwDOkG1SJ-IvfADnIH5loE-qYQ4/htmlview'},
+    {label:'얼굴패스(입구관리)',    val:'https://portal.heygreet.cloud/ko/login'},
+    {label:'소상공인24',            val:'https://sso.sbiz24.kr/'},
+    {label:'문화누리카드 신청',     val:'https://www.mnuri.kr/merchmt/merchmtInsert.do'},
+    {label:'부천페이 가맹점',       val:'https://gmoney.or.kr/base/gmoney/apply/list'},
+    {label:'경기도서관 독서포인트', val:'https://www.library.kr/ggl'}
   ],
   accounts:[
     {label:'카카오뱅크',       val:'3333-3725-33252 (비북스)'},
@@ -738,160 +712,89 @@ var DEFAULT_INFO = {
   ]
 };
 
-// ══════════════════════════════════════════════════════════════
-// 시작
-// ══════════════════════════════════════════════════════════════
-window.onload = function() {
-  // 오늘 날짜
-  var now = new Date();
-  // API URL 확인
-  var saved = localStorage.getItem('bb_api');
-  if (saved) {
-    API = saved;
+// ── 상태 ──────────────────────────────────────────────────────
+let tasks   = [];     // Firestore 실시간 동기화
+let infoData = null;
+let selDate  = null;
+let editId   = null;
+let curA     = '전체';
+let curCat   = 'all';
+let curView  = 'month';
+let unsubTasks = null; // 실시간 리스너 해제 함수
+
+// ── 초기화 ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initFirestore();
+});
+
+async function initFirestore() {
+  // 연결 상태 표시
+  setConnected(false);
+
+  // tasks 실시간 구독
+  const q = query(collection(db, 'tasks'), orderBy('createdAt', 'asc'));
+  unsubTasks = onSnapshot(q, snap => {
+    tasks = [];
+    snap.forEach(d => tasks.push({ id: d.id, ...d.data() }));
     setConnected(true);
-    document.getElementById('banner').classList.add('hidden');
-    sync();
-  } else {
-    // 로컬 전용 모드: 빈 상태로 시작 (데이터는 시트에서만)
-    render(); stats();
-  }
-};
+    render();
+    stats();
+  }, err => {
+    setConnected(false);
+    toast('Firestore 연결 오류: ' + err.message, 'err');
+  });
 
-// ══════════════════════════════════════════════════════════════
-// 연결 설정
-// ══════════════════════════════════════════════════════════════
-function connect() {
-  var u = document.getElementById('apiInput').value.trim();
-  if (!u.startsWith('https://script.google.com')) {
-    toast('올바른 Apps Script URL이 아닙니다', 'err'); return;
-  }
-  API = u;
-  localStorage.setItem('bb_api', u);
-  setConnected(true);
-  document.getElementById('banner').classList.add('hidden');
-  sync();
-}
-
-function skip() {
-  document.getElementById('banner').classList.add('hidden');
-  render(); stats();
+  // 중요 정보 로드
+  await loadInfo();
 }
 
 function setConnected(on) {
-  document.getElementById('dot').className = 'dot' + (on ? ' on' : '');
-  document.getElementById('conn-txt').textContent = on ? '시트 연결됨' : '로컬 전용';
+  const dot = g('dot'), txt = g('conn-txt');
+  dot.className = 'dot' + (on ? ' on' : '');
+  txt.textContent = on ? '실시간 연결됨' : '연결 중...';
 }
 
-// ══════════════════════════════════════════════════════════════
-// JSONP API 호출 (GET)
-// ══════════════════════════════════════════════════════════════
-function jsonpGet(action, cb) {
-  if (!API) { cb(null, null); return; }
-  var name = '_cb' + Date.now() + Math.random().toString(36).slice(2);
-  var s = document.createElement('script');
-  var done = false;
-  var timer = setTimeout(function() {
-    if (done) return;
-    done = true;
-    cleanup();
-    cb(new Error('timeout'), null);
-  }, 15000);
-
-  window[name] = function(data) {
-    if (done) return;
-    done = true;
-    clearTimeout(timer);
-    cleanup();
-    cb(null, data);
-  };
-  s.onerror = function() {
-    if (done) return;
-    done = true;
-    clearTimeout(timer);
-    cleanup();
-    cb(new Error('script error'), null);
-  };
-  function cleanup() {
-    delete window[name];
-    if (s.parentNode) s.parentNode.removeChild(s);
-  }
-  s.src = API + '?action=' + action + '&callback=' + name + '&_=' + Date.now();
-  document.head.appendChild(s);
-}
-
-// POST (no-cors — 응답 읽기 불가하지만 시트에는 저장됨)
-function apiPost(action, body) {
-  if (!API) return;
-  fetch(API + '?action=' + action, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(body)
-  }).catch(function() {});
-}
-
-// ══════════════════════════════════════════════════════════════
-// 동기화
-// ══════════════════════════════════════════════════════════════
-function sync() {
-  if (!API) return;
-  loading(true, '구글 시트에서 불러오는 중...');
-  document.getElementById('syncBtn').textContent = '...';
-
-  jsonpGet('getTasks', function(err, data) {
-    if (!err && data && Array.isArray(data.tasks)) {
-      tasks = data.tasks.map(norm);
+// ── 중요 정보 ────────────────────────────────────────────────
+async function loadInfo() {
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'info'));
+    if (snap.exists()) {
+      infoData = snap.data().content;
+    } else {
+      infoData = clone(DEFAULT_INFO);
     }
-    // info도 가져오기
-    jsonpGet('getInfo', function(err2, info) {
-      if (!err2 && info && info.content) {
-        try { infoData = JSON.parse(info.content); } catch(e) {}
-      }
-      if (!infoData) infoData = clone(DEFAULT_INFO);
-      loading(false);
-      document.getElementById('syncBtn').textContent = '↻';
-      render(); stats();
-      toast(err ? '연결 실패 — 로컬 표시' : '동기화 완료', err ? 'err' : 'ok');
-    });
-  });
+  } catch(e) {
+    infoData = clone(DEFAULT_INFO);
+  }
 }
 
-// 날짜 정규화
-function norm(t) {
-  var d = t.due_date || '';
-  if (d.length > 10) d = d.slice(0, 10);
-  return Object.assign({}, t, { due_date: d });
-}
-
-// ══════════════════════════════════════════════════════════════
-// 필터 / 정렬
-// ══════════════════════════════════════════════════════════════
-function setA(a, el) {
+// ── 필터 / 정렬 ──────────────────────────────────────────────
+window.setA = function(a, el) {
   curA = a;
-  qsa('.af').forEach(function(b) { b.classList.remove('on'); });
+  qsa('.af').forEach(b => b.classList.remove('on'));
   el.classList.add('on');
   render();
-}
-function setCat(c, el) {
+};
+window.setCat = function(c, el) {
   curCat = c;
-  qsa('.ct').forEach(function(b) { b.classList.remove('on'); });
+  qsa('.ct').forEach(b => b.classList.remove('on'));
   el.classList.add('on');
   render();
-}
-function setView(v, el) {
+};
+window.setView = function(v, el) {
   curView = v;
-  qsa('.vb').forEach(function(b) { b.classList.remove('on'); });
+  qsa('.vb').forEach(b => b.classList.remove('on'));
   el.classList.add('on');
   render();
-}
+};
 
 function filtered() {
-  var st  = g('stSel').value;
-  var so  = g('sortSel').value;
-  var q   = g('searchInput').value.toLowerCase();
-  var today = td();
+  const st  = g('stSel').value;
+  const so  = g('sortSel').value;
+  const q   = g('searchInput').value.toLowerCase();
+  const today = td();
 
-  var f = tasks.filter(function(t) {
+  let f = tasks.filter(t => {
     if (curA !== '전체' && t.assignee !== curA) return false;
     if (curCat !== 'all' && t.category !== curCat) return false;
     if (st && t.status !== st) return false;
@@ -899,45 +802,45 @@ function filtered() {
     return true;
   });
 
-  f.sort(function(a, b) {
+  f.sort((a, b) => {
     if (so === 'priority') return (P_ORDER[a.priority]||2) - (P_ORDER[b.priority]||2);
-    if (so === 'due') return (a.due_date||'z').localeCompare(b.due_date||'z');
-    return (b.created_at||'').localeCompare(a.created_at||'');
+    if (so === 'due')      return (a.due_date||'z').localeCompare(b.due_date||'z');
+    // 최신순: createdAt Timestamp 비교
+    const ta = a.createdAt?.toMillis?.() ?? 0;
+    const tb = b.createdAt?.toMillis?.() ?? 0;
+    return tb - ta;
   });
   return f;
 }
 
 function stats() {
-  var today = td();
-  var f = filtered();
+  const today = td();
+  const f = filtered();
   g('s0').textContent = f.length;
-  g('s1').textContent = f.filter(function(t){ return t.status==='진행중'; }).length;
-  g('s2').textContent = f.filter(function(t){ return t.status==='완료'; }).length;
-  g('s3').textContent = f.filter(function(t){ return t.due_date && t.due_date<today && t.status!=='완료'; }).length;
+  g('s1').textContent = f.filter(t => t.status === '진행중').length;
+  g('s2').textContent = f.filter(t => t.status === '완료').length;
+  g('s3').textContent = f.filter(t => t.due_date && t.due_date < today && t.status !== '완료').length;
 }
 
-// ══════════════════════════════════════════════════════════════
-// 렌더링 진입점
-// ══════════════════════════════════════════════════════════════
+// ── 렌더링 진입점 ────────────────────────────────────────────
 function render() {
   stats();
-  if (curView === 'month') renderMonth();
-  else if (curView === 'week')  renderWeek();
-  else if (curView === 'day')   renderDay();
-  else renderList(filtered());
+  if (curView === 'month')     renderMonth();
+  else if (curView === 'week') renderWeek();
+  else if (curView === 'day')  renderDay();
+  else                         renderList(filtered());
 }
+window.render = render;
 
-// ══════════════════════════════════════════════════════════════
-// 월간 캘린더
-// ══════════════════════════════════════════════════════════════
+// ── 월간 캘린더 ──────────────────────────────────────────────
 function renderMonth() {
-  var now = new Date();
-  var y1 = now.getFullYear(), m1 = now.getMonth();
-  var m2 = m1 + 1, y2 = y1;
+  const now = new Date();
+  const y1 = now.getFullYear(), m1 = now.getMonth();
+  let m2 = m1 + 1, y2 = y1;
   if (m2 > 11) { m2 = 0; y2++; }
 
-  var dated = filtered().filter(function(t){ return !!t.due_date; });
-  var nodate = filtered().filter(function(t){ return !t.due_date; });
+  const dated  = filtered().filter(t =>  t.due_date);
+  const nodate = filtered().filter(t => !t.due_date);
 
   g('main').innerHTML =
     '<div class="calw">' +
@@ -953,34 +856,31 @@ function renderMonth() {
 }
 
 function buildMo(yr, mo, dated) {
-  var fd  = new Date(yr, mo, 1).getDay();
-  var ld  = new Date(yr, mo+1, 0).getDate();
-  var pld = new Date(yr, mo, 0).getDate();
-  var today = td();
-  var cells = '';
+  const fd  = new Date(yr, mo, 1).getDay();
+  const ld  = new Date(yr, mo+1, 0).getDate();
+  const pld = new Date(yr, mo, 0).getDate();
+  const today = td();
+  let cells = '';
 
-  // 이전 달 빈칸
-  for (var i = fd-1; i >= 0; i--)
+  for (let i = fd-1; i >= 0; i--)
     cells += '<div class="cday om"><div class="cdn">' + (pld-i) + '</div></div>';
 
-  // 현재 달
-  for (var d = 1; d <= ld; d++) {
-    var ds  = yr + '-' + p2(mo+1) + '-' + p2(d);
-    var dow = new Date(yr, mo, d).getDay();
-    var isT = ds === today;
-    var dt  = dated.filter(function(t){ return t.due_date === ds; });
-    var chips = dt.slice(0, 3).map(function(t) {
-      var bg = CAT_COLOR[t.category] || '#555';
-      var id = esc(t.id);
+  for (let d = 1; d <= ld; d++) {
+    const ds  = yr + '-' + p2(mo+1) + '-' + p2(d);
+    const dow = new Date(yr, mo, d).getDay();
+    const isT = ds === today;
+    const dt  = dated.filter(t => t.due_date === ds);
+    const chips = dt.slice(0, 3).map(t => {
+      const bg = CAT_COLOR[t.category] || '#555';
       return '<div class="chip" style="background:' + bg + '" ' +
-        'onclick="event.stopPropagation();openTask(\'' + id + '\')" ' +
+        'onclick="event.stopPropagation();openTask(\'' + esc(t.id) + '\')" ' +
         'title="' + esc(t.title) + '">' +
         '<span class="chip-dot"></span>' +
         esc(t.title.slice(0,12)) + (t.title.length > 12 ? '…' : '') +
         '</div>';
     }).join('');
-    var more = dt.length > 3 ? '<div class="more">+' + (dt.length-3) + '개 더</div>' : '';
-    var numH = isT ? '<span class="cdn-circle">' + d + '</span>' : d;
+    const more  = dt.length > 3 ? '<div class="more">+' + (dt.length-3) + '개 더</div>' : '';
+    const numH  = isT ? '<span class="cdn-circle">' + d + '</span>' : d;
 
     cells += '<div class="cday' +
       (isT ? ' today' : '') +
@@ -990,19 +890,18 @@ function buildMo(yr, mo, dated) {
       chips + more + '</div>';
   }
 
-  // 다음 달 빈칸
-  var total = Math.ceil((fd + ld) / 7) * 7;
-  for (var x = 1; x <= total - (fd + ld); x++)
+  const total = Math.ceil((fd + ld) / 7) * 7;
+  for (let x = 1; x <= total - (fd + ld); x++)
     cells += '<div class="cday om"><div class="cdn">' + x + '</div></div>';
 
   return '<div class="cmo"><div class="cmo-ttl">' + yr + '년 ' + MON[mo] + '</div>' +
     '<div class="cgrid">' +
-    DOW.map(function(d){ return '<div class="cdow">' + d + '</div>'; }).join('') +
+    DOW.map(d => '<div class="cdow">' + d + '</div>').join('') +
     cells + '</div></div>';
 }
 
 function ndCard(t) {
-  var bg = CAT_COLOR[t.category] || '#666';
+  const bg = CAT_COLOR[t.category] || '#666';
   return '<div class="ndc" onclick="openTask(\'' + esc(t.id) + '\')">' +
     '<div class="ndc-t">' + esc(t.title) + '</div>' +
     '<div class="ndc-m">' +
@@ -1012,28 +911,28 @@ function ndCard(t) {
     '</div></div>';
 }
 
-// ══════════════════════════════════════════════════════════════
-// 주간 뷰
-// ══════════════════════════════════════════════════════════════
+// ── 주간 뷰 ──────────────────────────────────────────────────
 function renderWeek() {
-  var now = new Date();
-  var sw = new Date(now); sw.setDate(now.getDate() - now.getDay());
-  var days = [];
-  for (var i = 0; i < 7; i++) { var dd = new Date(sw); dd.setDate(sw.getDate()+i); days.push(dd); }
-  var today = td();
-  var dated = filtered().filter(function(t){ return !!t.due_date; });
+  const now = new Date();
+  const sw  = new Date(now); sw.setDate(now.getDate() - now.getDay());
+  const days = [];
+  for (let i = 0; i < 7; i++) { const dd = new Date(sw); dd.setDate(sw.getDate()+i); days.push(dd); }
+  const today = td();
+  const dated = filtered().filter(t => t.due_date);
 
-  var cols = days.map(function(dd, i) {
-    var ds = dd.toISOString().slice(0,10);
-    var ts = dated.filter(function(t){ return t.due_date === ds; });
-    var isT = ds === today;
+  const cols = days.map(dd => {
+    const ds  = dd.toISOString().slice(0,10);
+    const dow = dd.getDay();
+    const isT = ds === today;
+    const dt  = dated.filter(t => t.due_date === ds);
     return '<div class="wcol">' +
-      '<div class="wcol-h' + (isT?' today':'') + '">' + DOW[i] + '<br>' + (dd.getMonth()+1) + '/' + dd.getDate() + '</div>' +
-      '<div class="wcol-b">' +
-      ts.map(function(t) {
-        var bg = CAT_COLOR[t.category] || '#666';
-        return '<div class="wchip" style="background:' + bg + '" onclick="openTask(\'' + esc(t.id) + '\')" title="' + esc(t.title) + '">' +
-          esc(t.title.slice(0,8)) + (t.title.length>8?'…':'') + '</div>';
+      '<div class="wcol-h' + (isT?' today':'') + '">' +
+      DOW[dow] + '<br>' + (dd.getMonth()+1) + '/' + dd.getDate() +
+      '</div><div class="wcol-b">' +
+      dt.map(t => {
+        const bg = CAT_COLOR[t.category] || '#555';
+        return '<div class="wchip" style="background:' + bg + '" onclick="openTask(\'' + esc(t.id) + '\')">' +
+          esc(t.title.slice(0,16)) + (t.title.length>16?'…':'') + '</div>';
       }).join('') +
       '</div></div>';
   }).join('');
@@ -1041,37 +940,26 @@ function renderWeek() {
   g('main').innerHTML = '<div class="weekw"><div class="wgrid">' + cols + '</div></div>';
 }
 
-// ══════════════════════════════════════════════════════════════
-// 일간 뷰
-// ══════════════════════════════════════════════════════════════
+// ── 일간 뷰 ──────────────────────────────────────────────────
 function renderDay() {
-  var today = td();
-  var ts = filtered().filter(function(t){ return t.due_date === today; });
-  g('main').innerHTML =
-    '<div class="listw"><h3>오늘의 업무 — ' + today + '</h3>' +
-    (ts.length === 0
-      ? '<div class="empty"><div class="ei">📭</div>오늘 예정된 업무가 없습니다.</div>'
-      : ts.map(tcHTML).join('')) +
+  const today = td();
+  const dt = filtered().filter(t => t.due_date === today);
+  g('main').innerHTML = '<div class="listw"><h3>📅 오늘 (' + today + ')</h3>' +
+    (dt.length ? dt.map(taskCard).join('') : '<div class="empty"><div class="ei">✅</div>오늘 업무가 없습니다</div>') +
     '</div>';
 }
 
-// ══════════════════════════════════════════════════════════════
-// 목록 뷰
-// ══════════════════════════════════════════════════════════════
-function renderList(f) {
-  g('main').innerHTML =
-    '<div class="listw">' +
-    (f.length === 0
-      ? '<div class="empty"><div class="ei">📭</div>업무가 없습니다.</div>'
-      : f.map(tcHTML).join('')) +
+// ── 목록 뷰 ──────────────────────────────────────────────────
+function renderList(list) {
+  g('main').innerHTML = '<div class="listw">' +
+    (list.length ? list.map(taskCard).join('') : '<div class="empty"><div class="ei">📭</div>업무가 없습니다</div>') +
     '</div>';
 }
 
-function tcHTML(t) {
-  var today = td();
-  var ov  = t.due_date && t.due_date < today && t.status !== '완료';
-  var bg  = CAT_COLOR[t.category] || '#888';
-  var pc  = P_COLOR[t.priority]   || '#888';
+function taskCard(t) {
+  const bg   = CAT_COLOR[t.category] || '#888';
+  const pc   = P_COLOR[t.priority] || '#888';
+  const ov   = t.due_date && t.due_date < td() && t.status !== '완료';
   return '<div class="tc' + (t.status==='완료'?' done':'') + '" onclick="openTask(\'' + esc(t.id) + '\')">' +
     '<div class="tc-dot" style="background:' + pc + '"></div>' +
     '<div class="tc-b">' +
@@ -1090,17 +978,15 @@ function tcHTML(t) {
     '</div>';
 }
 
-// ══════════════════════════════════════════════════════════════
-// 날짜 사이드 패널
-// ══════════════════════════════════════════════════════════════
-function openDp(ds) {
+// ── 날짜 사이드 패널 ─────────────────────────────────────────
+window.openDp = function(ds) {
   selDate = ds;
   g('dp-ttl').textContent = ds;
-  var ts = filtered().filter(function(t){ return t.due_date === ds; });
+  const ts = filtered().filter(t => t.due_date === ds);
   g('dp-body').innerHTML = ts.length === 0
     ? '<p style="padding:12px;color:var(--sub);font-size:12px">이 날짜에 업무가 없습니다.<br>아래 버튼으로 추가하세요.</p>'
-    : ts.map(function(t) {
-        var bg = CAT_COLOR[t.category] || '#888';
+    : ts.map(t => {
+        const bg = CAT_COLOR[t.category] || '#888';
         return '<div class="dp-task" onclick="openTask(\'' + esc(t.id) + '\')">' +
           '<div class="dp-task-t">' + esc(t.title) + '</div>' +
           '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px">' +
@@ -1111,186 +997,252 @@ function openDp(ds) {
           (t.memo ? '<div style="font-size:10px;color:var(--sub);margin-top:3px">' + esc(t.memo).slice(0,60) + '</div>' : '') +
           '</div>';
       }).join('');
-  g('dp-add').onclick = function() { openTask(null, false, ds); };
+  g('dp-add').onclick = () => openTask(null, false, ds);
   g('dp').classList.add('open');
-}
-function closeDp() { g('dp').classList.remove('open'); selDate = null; }
+};
+window.closeDp = function() { g('dp').classList.remove('open'); selDate = null; };
 
-// ══════════════════════════════════════════════════════════════
-// 업무 모달
-// ══════════════════════════════════════════════════════════════
-function openTask(id, noDate, prefDate) {
+// ── 업무 모달 ─────────────────────────────────────────────────
+window.openTask = function(id, noDate, prefDate) {
   noDate = !!noDate; prefDate = prefDate || '';
   editId = id || null;
   g('taskMod').classList.remove('hidden');
 
   if (id) {
-    var t = tasks.find(function(x){ return x.id === id; });
+    const t = tasks.find(x => x.id === id);
     if (!t) return;
     g('mod-ttl').textContent = '업무 수정';
-    g('tid').value = t.id;
-    g('tT').value  = t.title || '';
-    g('tC').value  = t.category || '';
-    g('tA').value  = t.assignee || '호세';
-    g('tP').value  = t.priority || '🟢 일반';
-    g('tS').value  = t.status   || '예정';
-    g('tH').value  = t.estimated_hours || '';
-    g('tD').value  = t.due_date || '';
-    g('tND').checked = !t.due_date;
-    g('tD').disabled = !t.due_date;
-    g('tM').value  = t.memo || '';
+    g('tid').value  = t.id;
+    g('tT').value   = t.title || '';
+    g('tC').value   = t.category || '';
+    g('tA').value   = t.assignee || '호세';
+    g('tP').value   = t.priority || '🟢 일반';
+    g('tS').value   = t.status   || '예정';
+    g('tH').value   = t.estimated_hours || '';
+    g('tD').value   = t.due_date || '';
+    g('tND').checked  = !t.due_date;
+    g('tD').disabled  = !t.due_date;
+    g('tM').value   = t.memo || '';
     g('tDel').style.display = 'block';
   } else {
     g('mod-ttl').textContent = '업무 추가';
-    g('tid').value = '';
-    g('tT').value  = '';
-    g('tC').value  = (curCat !== 'all') ? curCat : '';
-    g('tA').value  = (curA !== '전체') ? curA : '호세';
-    g('tP').value  = '🟢 일반';
-    g('tS').value  = '예정';
-    g('tH').value  = '';
-    g('tD').value  = prefDate;
-    g('tND').checked = noDate || !prefDate;
-    g('tD').disabled = noDate || !prefDate;
-    g('tM').value  = '';
+    g('tid').value  = '';
+    g('tT').value   = '';
+    g('tC').value   = (curCat !== 'all') ? curCat : '';
+    g('tA').value   = (curA !== '전체') ? curA : '호세';
+    g('tP').value   = '🟢 일반';
+    g('tS').value   = '예정';
+    g('tH').value   = '';
+    g('tD').value   = prefDate;
+    g('tND').checked  = noDate || !prefDate;
+    g('tD').disabled  = noDate || !prefDate;
+    g('tM').value   = '';
     g('tDel').style.display = 'none';
   }
-}
-function closeTask() { g('taskMod').classList.add('hidden'); editId = null; }
-function togND() {
+};
+window.closeTask = function() { g('taskMod').classList.add('hidden'); editId = null; };
+window.togND = function() {
   g('tD').disabled = g('tND').checked;
   if (g('tND').checked) g('tD').value = '';
-}
+};
 
-function saveTask() {
-  var title = g('tT').value.trim();
+window.saveTask = async function() {
+  const title = g('tT').value.trim();
   if (!title) { toast('제목을 입력하세요', 'err'); return; }
-  var nd = g('tND').checked;
-  var isEdit = !!g('tid').value;
+  const nd = g('tND').checked;
+  const isEdit = !!g('tid').value;
 
-  var t = {
-    id:               g('tid').value,
-    title:            title,
-    category:         g('tC').value,
-    assignee:         g('tA').value,
-    priority:         g('tP').value,
-    status:           g('tS').value,
-    estimated_hours:  g('tH').value,
-    due_date:         nd ? '' : g('tD').value,
-    memo:             g('tM').value,
-    created_at:       new Date().toISOString(),
+  const data = {
+    title,
+    category:        g('tC').value,
+    assignee:        g('tA').value,
+    priority:        g('tP').value,
+    status:          g('tS').value,
+    estimated_hours: g('tH').value,
+    due_date:        nd ? '' : g('tD').value,
+    memo:            g('tM').value,
+    updatedAt:       serverTimestamp(),
   };
 
-  if (isEdit) {
-    var idx = tasks.findIndex(function(x){ return x.id === t.id; });
-    if (idx !== -1) { t.created_at = tasks[idx].created_at; tasks[idx] = t; }
-    apiPost('updateTask', t);
-  } else {
-    t.id = 't' + Date.now();
-    tasks.push(t);
-    apiPost('addTask', t);
+  try {
+    if (isEdit) {
+      await updateDoc(doc(db, 'tasks', g('tid').value), data);
+    } else {
+      data.createdAt = serverTimestamp();
+      await addDoc(collection(db, 'tasks'), data);
+    }
+    closeTask();
+    if (selDate) openDp(selDate);
+    toast('저장됐습니다 ✓', 'ok');
+  } catch(e) {
+    toast('저장 실패: ' + e.message, 'err');
   }
+};
 
-  closeTask();
-  if (selDate) openDp(selDate); // 패널 열려있으면 갱신
-  render();
-  toast('저장됐습니다', 'ok');
-}
+window.delTask = async function() {
+  if (!confirm('정말 삭제할까요?')) return;
+  try {
+    await deleteDoc(doc(db, 'tasks', g('tid').value));
+    closeTask(); closeDp();
+    toast('삭제됐습니다', 'ok');
+  } catch(e) {
+    toast('삭제 실패: ' + e.message, 'err');
+  }
+};
 
-function delTask() {
-  if (!confirm('삭제할까요?')) return;
-  var id = g('tid').value;
-  tasks = tasks.filter(function(t){ return t.id !== id; });
-  apiPost('deleteTask', { id: id });
-  closeTask(); closeDp();
-  render();
-  toast('삭제됐습니다', 'ok');
-}
-
-// ══════════════════════════════════════════════════════════════
-// 중요 정보 모달
-// ══════════════════════════════════════════════════════════════
-function openInfo() {
+// ── 중요 정보 모달 ────────────────────────────────────────────
+window.openInfo = function() {
   if (!infoData) infoData = clone(DEFAULT_INFO);
   renderInfoBody();
   g('infoMod').classList.remove('hidden');
-}
-function closeInfo() { g('infoMod').classList.add('hidden'); }
+};
+window.closeInfo = function() { g('infoMod').classList.add('hidden'); };
 
-function saveInfo() {
-  apiPost('saveInfo', { content: JSON.stringify(infoData) });
-  closeInfo();
-  toast('중요 정보 저장됐습니다', 'ok');
-}
+window.saveInfo = async function() {
+  try {
+    await setDoc(doc(db, 'settings', 'info'), {
+      content: infoData,
+      updatedAt: serverTimestamp()
+    });
+    closeInfo();
+    toast('중요 정보 저장됐습니다 ✓', 'ok');
+  } catch(e) {
+    toast('저장 실패: ' + e.message, 'err');
+  }
+};
 
 function renderInfoBody() {
-  var secs = [
+  const secs = [
     { k:'docs',     t:'📄 자주 쓰는 서류' },
     { k:'links',    t:'🔗 자주 접속하는 사이트' },
     { k:'accounts', t:'💳 계좌 & 결제 정보' },
   ];
-  g('info-body').innerHTML = secs.map(function(s) {
-    return '<div class="info-sec"><h4>' + s.t + '</h4>' +
-      (infoData[s.k]||[]).map(function(item, i) {
-        return '<div class="ii" id="ii-' + s.k + '-' + i + '">' +
-          '<span class="ii-l">' + esc(item.label) + '</span>' +
-          '<span class="ii-v">' +
-          (item.val && item.val.startsWith('http')
-            ? '<a href="' + esc(item.val) + '" target="_blank">' + esc(item.val.length > 38 ? item.val.slice(0,38)+'…' : item.val) + '</a>'
-            : esc(item.val)) +
-          '</span>' +
-          '<button class="ieb" onclick="editII(\'' + s.k + '\',' + i + ')">✏️</button>' +
-          '</div>';
-      }).join('') +
-      '<button class="iadd" onclick="addII(\'' + s.k + '\')">+ 항목 추가</button>' +
-      '</div>';
-  }).join('');
+  g('info-body').innerHTML = secs.map(s =>
+    '<div class="info-sec"><h4>' + s.t + '</h4>' +
+    '<div class="ii-list" data-section="' + s.k + '">' +
+    (infoData[s.k]||[]).map((item, i) =>
+      '<div class="ii" id="ii-' + s.k + '-' + i + '" draggable="true" data-section="' + s.k + '" data-index="' + i + '">' +
+      '<span class="ii-grip" title="드래그하여 순서 변경">⠿</span>' +
+      '<span class="ii-l">' + esc(item.label) + '</span>' +
+      '<span class="ii-v">' +
+      (item.val && item.val.startsWith('http')
+        ? '<a href="' + esc(item.val) + '" target="_blank">' + esc(item.val.length > 38 ? item.val.slice(0,38)+'…' : item.val) + '</a>'
+        : esc(item.val)) +
+      '</span>' +
+      '<button class="ieb" type="button" onclick="editII(\'' + s.k + '\',' + i + ')">✏️</button>' +
+      '</div>'
+    ).join('') +
+    '</div>' +
+    '<button class="iadd" type="button" onclick="addII(\'' + s.k + '\')">+ 항목 추가</button>' +
+    '</div>'
+  ).join('');
+  initInfoDragDrop();
 }
 
-function editII(k, i) {
-  var item = infoData[k][i];
+let infoDrag = null;
+
+function initInfoDragDrop() {
+  qsa('.ii-list .ii').forEach(row => {
+    row.addEventListener('dragstart', onInfoDragStart);
+    row.addEventListener('dragend', onInfoDragEnd);
+    row.addEventListener('dragover', onInfoDragOver);
+    row.addEventListener('dragleave', onInfoDragLeave);
+    row.addEventListener('drop', onInfoDrop);
+  });
+}
+
+function onInfoDragStart(e) {
+  if (!e.target.closest('.ii-grip')) {
+    e.preventDefault();
+    return;
+  }
+  const row = e.currentTarget;
+  infoDrag = { section: row.dataset.section, from: Number(row.dataset.index) };
+  row.classList.add('ii-dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', infoDrag.section);
+}
+
+function onInfoDragEnd() {
+  qsa('.ii').forEach(row => row.classList.remove('ii-dragging', 'ii-over'));
+  infoDrag = null;
+}
+
+function onInfoDragOver(e) {
+  if (!infoDrag) return;
+  const row = e.currentTarget;
+  if (row.dataset.section !== infoDrag.section) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  qsa('.ii[data-section="' + infoDrag.section + '"]').forEach(r => r.classList.remove('ii-over'));
+  row.classList.add('ii-over');
+}
+
+function onInfoDragLeave(e) {
+  const row = e.currentTarget;
+  if (!row.contains(e.relatedTarget)) row.classList.remove('ii-over');
+}
+
+function onInfoDrop(e) {
+  e.preventDefault();
+  if (!infoDrag) return;
+  const row = e.currentTarget;
+  const section = row.dataset.section;
+  const to = Number(row.dataset.index);
+  const from = infoDrag.from;
+  if (section !== infoDrag.section || from === to) return;
+  const arr = infoData[section];
+  const [item] = arr.splice(from, 1);
+  arr.splice(to, 0, item);
+  renderInfoBody();
+}
+
+window.editII = function(k, i) {
+  const item = infoData[k][i];
   g('ii-' + k + '-' + i).innerHTML =
     '<input type="text" value="' + esc(item.label) + '" id="el-' + k + '-' + i + '" style="flex:0 0 100px;margin-right:5px"/>' +
     '<input type="text" value="' + esc(item.val) + '" id="ev-' + k + '-' + i + '" style="flex:1"/>' +
     '<button class="ieb" onclick="saveII(\'' + k + '\',' + i + ')">✅</button>' +
     '<button class="ieb" onclick="delII(\'' + k + '\',' + i + ')">🗑</button>';
-}
-function saveII(k, i) {
+};
+window.saveII = function(k, i) {
   infoData[k][i].label = g('el-' + k + '-' + i).value;
   infoData[k][i].val   = g('ev-' + k + '-' + i).value;
   renderInfoBody();
-}
-function delII(k, i) { infoData[k].splice(i, 1); renderInfoBody(); }
-function addII(k)    { infoData[k].push({label:'새 항목', val:''}); renderInfoBody(); editII(k, infoData[k].length-1); }
+};
+window.delII = function(k, i) { infoData[k].splice(i, 1); renderInfoBody(); };
+window.addII = function(k) {
+  infoData[k].push({label:'새 항목', val:''});
+  renderInfoBody();
+  editII(k, infoData[k].length - 1);
+};
 
-// ══════════════════════════════════════════════════════════════
-// 유틸
-// ══════════════════════════════════════════════════════════════
-function g(id) { return document.getElementById(id); }
+// ── 유틸 ─────────────────────────────────────────────────────
+function g(id)    { return document.getElementById(id); }
 function qsa(sel) { return Array.from(document.querySelectorAll(sel)); }
-function p2(n) { return String(n).padStart(2,'0'); }
-function td() { return new Date().toISOString().slice(0,10); }
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+function p2(n)    { return String(n).padStart(2, '0'); }
+function td()     { return new Date().toISOString().slice(0, 10); }
+function esc(s)   {
+  return String(s||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
-function loading(show, msg) {
-  var el = g('loading');
-  el.classList.toggle('show', show);
-  if (msg) g('load-msg').textContent = msg;
-}
-
 function toast(msg, type) {
-  var el = g('toast');
+  const el = g('toast');
   el.textContent = msg;
   el.className = 'show ' + (type||'');
   clearTimeout(el._t);
-  el._t = setTimeout(function(){ el.className = ''; }, 2600);
+  el._t = setTimeout(() => { el.className = ''; }, 2600);
 }
 
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') { closeTask(); closeInfo(); closeDp(); }
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeTask();
+    closeInfo();
+    closeDp();
+  }
 });
 </script>
 </body>
