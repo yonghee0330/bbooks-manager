@@ -167,6 +167,315 @@ body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-
 .stat-v { font-size: 20px; font-weight: 800; color: var(--navy); }
 .stat-v.red { color: var(--p0); }
 
+/* ── AI 메모장 ── */
+.memo-wrap { padding: 14px 16px 24px; }
+.memo-compose {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+  box-shadow: var(--sh);
+}
+.memo-compose textarea {
+  width: 100%;
+  min-height: 72px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.memo-compose textarea:focus { outline: none; border-color: var(--navy); }
+.memo-compose-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.memo-compose-bar select {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.memo-compose-bar .memo-hint {
+  font-size: 11px;
+  color: var(--sub);
+  margin-left: auto;
+}
+.btn-memo {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #1e3f7a, var(--navy));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.btn-memo:hover { opacity: .92; }
+.memo-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.memo-col {
+  background: #f8f9fc;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+}
+.memo-col-h {
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  border-radius: 11px 11px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.memo-col-count {
+  background: rgba(255,255,255,.22);
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+}
+.memo-col-list {
+  flex: 1;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
+}
+.memo-col-list.memo-over {
+  background: rgba(10,31,68,.06);
+  outline: 2px dashed var(--navy3);
+  outline-offset: -4px;
+  border-radius: 0 0 10px 10px;
+}
+.memo-note {
+  position: relative;
+  padding: 10px 10px 8px 28px;
+  border-radius: 8px;
+  border: 2px solid;
+  box-shadow: 0 4px 14px rgba(10,31,68,.12);
+  cursor: default;
+  transition: transform .12s, box-shadow .12s;
+}
+.memo-note:hover { box-shadow: 0 6px 18px rgba(10,31,68,.16); }
+.memo-note.memo-dragging { opacity: .55; transform: rotate(-1deg); }
+.memo-note.author-hosea {
+  background: linear-gradient(160deg, #dbeafe 0%, #eff6ff 100%);
+  border-color: #3b82f6;
+}
+.memo-note.author-sundari {
+  background: linear-gradient(160deg, #fce7f3 0%, #fdf2f8 100%);
+  border-color: #ec4899;
+}
+.memo-grip {
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  color: rgba(10,31,68,.35);
+  font-size: 13px;
+  cursor: grab;
+  user-select: none;
+  padding: 2px;
+}
+.memo-grip:active { cursor: grabbing; }
+.memo-note-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.memo-author-badge {
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 10px;
+  color: #fff;
+}
+.author-hosea .memo-author-badge { background: #2563eb; }
+.author-sundari .memo-author-badge { background: #db2777; }
+.memo-note-del {
+  border: none;
+  background: transparent;
+  color: rgba(10,31,68,.35);
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+}
+.memo-note-del:hover { color: #dc2626; }
+.memo-note-text {
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 8px;
+}
+.memo-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.memo-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(10,31,68,.08);
+  color: var(--navy);
+}
+.memo-ai-badge {
+  font-size: 9px;
+  color: var(--sub);
+  margin-top: 6px;
+}
+
+/* ── 화이트보드 ── */
+.wb-wrap { padding: 12px 16px 20px; display: flex; flex-direction: column; gap: 10px; height: calc(100vh - 168px); min-height: 480px; }
+.wb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-shadow: var(--sh);
+}
+.wb-tool {
+  padding: 6px 11px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--text);
+}
+.wb-tool.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+.wb-tool-sep { width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
+.wb-toolbar select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 11px; font-weight: 700; }
+.wb-toolbar .wb-hint { font-size: 10px; color: var(--sub); margin-left: auto; }
+.wb-viewport {
+  flex: 1;
+  overflow: auto;
+  background: #e8eaef;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  position: relative;
+}
+.wb-surface {
+  position: relative;
+  width: 2400px;
+  height: 1600px;
+  background:
+    linear-gradient(#f4f5f8 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, #f4f5f8 1px, transparent 1px) 0 0 / 24px 24px,
+    #fff;
+  box-shadow: inset 0 0 0 1px #dde1e8;
+}
+#wbCanvas {
+  position: absolute;
+  inset: 0;
+  width: 2400px;
+  height: 1600px;
+  touch-action: none;
+  cursor: crosshair;
+}
+.wb-objects { position: absolute; inset: 0; pointer-events: none; }
+.wb-item {
+  position: absolute;
+  pointer-events: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(10,31,68,.14);
+  min-width: 120px;
+  max-width: 320px;
+}
+.wb-item.selected { outline: 2px solid var(--navy); outline-offset: 2px; }
+.wb-item.author-hosea { border: 2px solid #3b82f6; }
+.wb-item.author-sundari { border: 2px solid #ec4899; }
+.wb-item-badge {
+  position: absolute;
+  top: -8px;
+  left: 8px;
+  font-size: 9px;
+  font-weight: 900;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+.author-hosea .wb-item-badge { background: #2563eb; }
+.author-sundari .wb-item-badge { background: #db2777; }
+.wb-item-del {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  border: none;
+  background: rgba(255,255,255,.85);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--sub);
+  line-height: 1;
+}
+.wb-item-del:hover { color: #dc2626; }
+.wb-text {
+  background: #fffef5;
+  padding: 12px 14px 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  min-height: 48px;
+  outline: none;
+  word-break: break-word;
+}
+.wb-link {
+  background: #fff;
+  padding: 12px 14px 10px;
+}
+.wb-link a {
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  word-break: break-all;
+}
+.wb-link a:hover { text-decoration: underline; }
+.wb-link-url { font-size: 10px; color: var(--sub); margin-top: 4px; word-break: break-all; }
+.wb-image {
+  background: #fff;
+  padding: 8px;
+  max-width: 280px;
+}
+.wb-image img {
+  display: block;
+  width: 100%;
+  border-radius: 6px;
+}
+.wb-image-cap {
+  font-size: 10px;
+  color: var(--sub);
+  margin-top: 6px;
+  outline: none;
+  min-height: 16px;
+}
+.wb-viewport.tool-select #wbCanvas { cursor: default; }
+.wb-viewport.tool-pen #wbCanvas { cursor: crosshair; }
+.wb-viewport.tool-eraser #wbCanvas { cursor: cell; }
+
 /* ── 로딩 ── */
 #loading {
   display: none;
@@ -519,6 +828,10 @@ body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-
   .fg-2 { grid-template-columns: 1fr; }
   #dp { width: 90vw; }
   #searchInput { width: 100px; }
+  .memo-board { grid-template-columns: 1fr; }
+  .memo-compose-bar .memo-hint { width: 100%; margin-left: 0; }
+  .wb-wrap { height: calc(100vh - 150px); }
+  .wb-toolbar .wb-hint { width: 100%; margin-left: 0; }
 }
 </style>
 </head>
@@ -559,6 +872,8 @@ body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-
   <div class="ct" onclick="setCat('💰 운영&행정',this)">💰 운영</div>
   <div class="ct" onclick="setCat('🔗 외부연결',this)">🔗 외부</div>
   <div class="ct" onclick="setCat('💡 기획&아이디어',this)">💡 기획</div>
+  <div class="ct" onclick="setCat('memo',this)">🤖 AI 메모장</div>
+  <div class="ct" onclick="setCat('whiteboard',this)">🖊️ 화이트보드</div>
 </div>
 
 <!-- 뷰 바 -->
@@ -664,7 +979,25 @@ body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-
   </div>
 </div>
 
+<!-- 화이트보드 → AI 메모 저장 모달 -->
+<div class="ov hidden" id="wbSaveMod">
+  <div class="modal" style="max-width:540px">
+    <div class="mod-t"><span>🤖 AI 메모장에 저장</span><button class="mc" onclick="closeWbSave()">✕</button></div>
+    <p style="font-size:12px;color:var(--sub);margin-bottom:10px">화이트보드 내용을 정리했습니다. 수정 후 AI 메모장에 저장하세요.</p>
+    <textarea id="wbSaveText" style="width:100%;min-height:180px;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12px;line-height:1.5;resize:vertical"></textarea>
+    <div class="memo-compose-bar" style="margin-top:10px">
+      <label style="font-size:12px;font-weight:700;color:var(--navy)">작성자</label>
+      <select id="wbSaveAuthor"><option>호세</option><option>써든리</option></select>
+    </div>
+    <div class="fa">
+      <button class="btn btn-s" onclick="closeWbSave()">취소</button>
+      <button class="btn btn-p" onclick="confirmWbSave()">AI 메모장에 저장</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
+<input type="file" id="wbImageInput" accept="image/*" style="display:none"/>
 
 <script type="module">
 // ══════════════════════════════════════════════════════════════
@@ -676,6 +1009,8 @@ import { getFirestore, collection, doc,
          setDoc, getDoc, getDocs,
          onSnapshot, query, orderBy,
          serverTimestamp }                    from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+import { getStorage, ref, uploadBytes,
+         getDownloadURL }                     from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js';
 
 // ── Firebase 설정 ─────────────────────────────────────────────
 const firebaseConfig = {
@@ -688,6 +1023,11 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app);
+const storage = getStorage(app);
+
+const WB_W = 2400;
+const WB_H = 1600;
+const WB_AUTHOR_COLOR = { '호세': '#2563eb', '써든리': '#db2777' };
 
 // ── 상수 ──────────────────────────────────────────────────────
 const CAT_COLOR = {
@@ -699,6 +1039,19 @@ const P_COLOR = {'🔴 긴급':'#dc2626','🟡 중요':'#d97706','🟢 일반':'
 const P_ORDER = {'🔴 긴급':0,'🟡 중요':1,'🟢 일반':2};
 const DOW = ['일','월','화','수','목','금','토'];
 const MON = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+const MEMO_CATS = [
+  '📦 공간&환경','📣 홍보&마케팅','🤝 점주&커뮤니티',
+  '🎪 모임&행사','💰 운영&행정','🔗 외부연결','💡 기획&아이디어'
+];
+const CLASSIFY_RULES = [
+  { cat:'📦 공간&환경', kw:['서가','공간','환경','인테리어','현수막','네임플레이트','앞치마','화장실','디스펜서','간판','매장','쇼케이스','음료'] },
+  { cat:'📣 홍보&마케팅', kw:['인스타','홍보','마케팅','포스팅','sns','전단','b.zins','티셔츠','브랜딩','콘텐츠','스토어','네이버'] },
+  { cat:'🤝 점주&커뮤니티', kw:['점주','커뮤니티','소통','계약','금요지기','지기','참가자','명단','크루'] },
+  { cat:'🎪 모임&행사', kw:['비모임','비톡스','밤밀온','비박스','행사','모임','플리마켓','작가','사인회','셀러','추리'] },
+  { cat:'💰 운영&행정', kw:['결제','가맹','운영','행정','폐업','토스','부천페이','문화누리','독서포인트','지원사업','위생','통장','사업자'] },
+  { cat:'🔗 외부연결', kw:['협업','미디어','지역','외부','메일','연락','제안','파트너','출판','교수'] },
+  { cat:'💡 기획&아이디어', kw:['기획','아이디어','멤버십','구독','신규','스탬프','b.stamp','스탬프러리','미래','프로모션','도장'] }
+];
 
 const DEFAULT_INFO = {
   docs:[
@@ -726,13 +1079,25 @@ const DEFAULT_INFO = {
 
 // ── 상태 ──────────────────────────────────────────────────────
 let tasks   = [];     // Firestore 실시간 동기화
+let memos   = [];
 let infoData = null;
 let selDate  = null;
 let editId   = null;
 let curA     = '전체';
 let curCat   = 'all';
 let curView  = 'month';
-let unsubTasks = null; // 실시간 리스너 해제 함수
+let unsubTasks = null;
+let unsubMemos = null;
+let unsubWhiteboard = null;
+let memoDrag = null;
+let wbElements = [];
+let wbTool = 'pen';
+let wbAuthor = '호세';
+let wbSelectedId = null;
+let wbDrawing = false;
+let wbCurrentPoints = [];
+let wbDragItem = null;
+let wbLocalStrokeId = null;
 
 // ── 초기화 ───────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -754,6 +1119,23 @@ async function initFirestore() {
   }, err => {
     setConnected(false);
     toast('Firestore 연결 오류: ' + err.message, 'err');
+  });
+
+  // memos 실시간 구독
+  unsubMemos = onSnapshot(collection(db, 'memos'), snap => {
+    memos = [];
+    snap.forEach(d => memos.push({ id: d.id, ...d.data() }));
+    if (curCat === 'memo') renderMemoBoard();
+  }, err => {
+    toast('메모 연결 오류: ' + err.message, 'err');
+  });
+
+  unsubWhiteboard = onSnapshot(collection(db, 'whiteboard_elements'), snap => {
+    wbElements = [];
+    snap.forEach(d => wbElements.push({ id: d.id, ...d.data() }));
+    syncWhiteboardView();
+  }, err => {
+    toast('화이트보드 연결 오류: ' + err.message, 'err');
   });
 
   // 중요 정보 로드
@@ -791,8 +1173,15 @@ window.setCat = function(c, el) {
   curCat = c;
   qsa('.ct').forEach(b => b.classList.remove('on'));
   el.classList.add('on');
+  toggleSpecialView(c);
   render();
 };
+
+function toggleSpecialView(mode) {
+  const special = mode === 'memo' || mode === 'whiteboard';
+  g('vbar').style.display = special ? 'none' : '';
+  g('stats').style.display = special ? 'none' : '';
+}
 window.setView = function(v, el) {
   curView = v;
   qsa('.vb').forEach(b => b.classList.remove('on'));
@@ -836,6 +1225,14 @@ function stats() {
 
 // ── 렌더링 진입점 ────────────────────────────────────────────
 function render() {
+  if (curCat === 'memo') {
+    renderMemoBoard();
+    return;
+  }
+  if (curCat === 'whiteboard') {
+    renderWhiteboard();
+    return;
+  }
   stats();
   if (curView === 'month')     renderMonth();
   else if (curView === 'week') renderWeek();
@@ -1102,6 +1499,720 @@ window.delTask = async function() {
   }
 };
 
+// ── AI 메모장 ──────────────────────────────────────────────────
+function classifyMemo(text) {
+  const t = text.toLowerCase();
+  let best = { cat: '💡 기획&아이디어', score: 0 };
+
+  CLASSIFY_RULES.forEach(rule => {
+    let score = 0;
+    rule.kw.forEach(kw => { if (t.includes(kw)) score++; });
+    if (score > best.score) best = { cat: rule.cat, score };
+  });
+
+  const tags = [];
+  (text.match(/#[\w가-힣]+/g) || []).forEach(tag => tags.push(tag.slice(1)));
+  const matched = CLASSIFY_RULES.find(r => r.cat === best.cat);
+  if (matched) {
+    matched.kw.forEach(kw => {
+      if (t.includes(kw) && !tags.includes(kw)) tags.push(kw);
+    });
+  }
+  if (best.score === 0) tags.push('미분류');
+
+  return { category: best.cat, tags: tags.slice(0, 6) };
+}
+
+function detectMemoAuthor(text, fallback) {
+  if (/써든리|sundari/i.test(text)) return '써든리';
+  if (/호세|hosea/i.test(text)) return '호세';
+  if (fallback === '호세' || fallback === '써든리') return fallback;
+  return '호세';
+}
+
+function filteredMemos() {
+  return memos
+    .filter(m => curA === '전체' || m.author === curA)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+}
+
+function nextMemoOrder(cat) {
+  const inCat = memos.filter(m => m.category === cat);
+  if (!inCat.length) return Date.now();
+  return Math.max(...inCat.map(m => m.order || 0)) + 1;
+}
+
+function renderMemoBoard() {
+  const defaultAuthor = (curA === '호세' || curA === '써든리') ? curA : '호세';
+  const list = filteredMemos();
+
+  g('main').innerHTML =
+    '<div class="memo-wrap">' +
+    '<div class="memo-compose">' +
+    '<textarea id="memoInput" placeholder="진행 중인 생각, 아이디어, 할 일… 무엇이든 적어주세요. AI가 카테고리와 태그를 자동 분류합니다."></textarea>' +
+    '<div class="memo-compose-bar">' +
+    '<select id="memoAuthor"><option' + (defaultAuthor==='호세'?' selected':'') + '>호세</option><option' + (defaultAuthor==='써든리'?' selected':'') + '>써든리</option></select>' +
+    '<button class="btn-memo" onclick="addMemo()">✨ AI 분류 & 포스트잇 붙이기</button>' +
+    '<span class="memo-hint">⠿ 드래그로 카테고리·순서 변경</span>' +
+    '</div></div>' +
+    '<div class="memo-board">' +
+    MEMO_CATS.map(cat => {
+      const items = list.filter(m => m.category === cat);
+      const colColor = CAT_COLOR[cat] || varNavy();
+      return '<div class="memo-col">' +
+        '<div class="memo-col-h" style="background:' + colColor + '">' +
+        '<span>' + esc(cat) + '</span>' +
+        '<span class="memo-col-count">' + items.length + '</span></div>' +
+        '<div class="memo-col-list" data-cat="' + escAttr(cat) + '">' +
+        items.map(m => memoNoteHtml(m)).join('') +
+        '</div></div>';
+    }).join('') +
+    '</div></div>';
+
+  initMemoDragDrop();
+}
+
+function varNavy() { return '#0A1F44'; }
+
+function memoNoteHtml(m) {
+  const authorCls = m.author === '써든리' ? 'author-sundari' : 'author-hosea';
+  const tags = (m.tags || []).map(t => '<span class="memo-tag">#' + esc(t) + '</span>').join('');
+  return '<div class="memo-note ' + authorCls + '" data-id="' + m.id + '" data-cat="' + escAttr(m.category) + '">' +
+    '<span class="memo-grip" draggable="true" title="드래그하여 이동">⠿</span>' +
+    '<div class="memo-note-top">' +
+    '<span class="memo-author-badge">' + esc(m.author) + '</span>' +
+    '<button class="memo-note-del" type="button" onclick="deleteMemo(\'' + m.id + '\')">×</button>' +
+    '</div>' +
+    '<div class="memo-note-text" ondblclick="editMemo(\'' + m.id + '\')">' + esc(m.text) + '</div>' +
+    '<div class="memo-tags">' + tags + '</div>' +
+    '<div class="memo-ai-badge">🤖 AI 분류</div>' +
+    '</div>';
+}
+
+function escAttr(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+async function saveMemoFromText(text, author, source) {
+  const trimmed = text.trim();
+  if (!trimmed) throw new Error('내용이 비어 있습니다');
+  const resolvedAuthor = detectMemoAuthor(trimmed, author);
+  const { category, tags } = classifyMemo(trimmed);
+  await addDoc(collection(db, 'memos'), {
+    text: trimmed,
+    author: resolvedAuthor,
+    category,
+    tags,
+    order: nextMemoOrder(category),
+    source: source || 'manual',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  return { category, resolvedAuthor };
+}
+
+window.addMemo = async function() {
+  const text = g('memoInput').value.trim();
+  if (!text) { toast('메모 내용을 입력해주세요', 'err'); return; }
+  try {
+    const { category } = await saveMemoFromText(text, g('memoAuthor').value, 'manual');
+    g('memoInput').value = '';
+    toast('🤖 ' + category.split(' ')[0] + ' 카테고리로 분류됐습니다', 'ok');
+  } catch(e) {
+    toast('메모 저장 실패: ' + e.message, 'err');
+  }
+};
+
+window.editMemo = async function(id) {
+  const m = memos.find(x => x.id === id);
+  if (!m) return;
+  const text = prompt('메모 수정', m.text);
+  if (text === null) return;
+  const trimmed = text.trim();
+  if (!trimmed) return;
+
+  const { category, tags } = classifyMemo(trimmed);
+  try {
+    await updateDoc(doc(db, 'memos', id), {
+      text: trimmed,
+      category,
+      tags,
+      updatedAt: serverTimestamp()
+    });
+    toast('메모 수정 · AI 재분류 완료', 'ok');
+  } catch(e) {
+    toast('수정 실패: ' + e.message, 'err');
+  }
+};
+
+window.deleteMemo = async function(id) {
+  if (!confirm('이 포스트잇을 삭제할까요?')) return;
+  try {
+    await deleteDoc(doc(db, 'memos', id));
+    toast('메모 삭제됨', 'ok');
+  } catch(e) {
+    toast('삭제 실패: ' + e.message, 'err');
+  }
+};
+
+function initMemoDragDrop() {
+  qsa('.memo-grip').forEach(grip => {
+    grip.addEventListener('dragstart', onMemoDragStart);
+    grip.addEventListener('dragend', onMemoDragEnd);
+  });
+  qsa('.memo-col-list').forEach(list => {
+    list.addEventListener('dragenter', onMemoListDragEnter);
+    list.addEventListener('dragover', onMemoListDragOver);
+    list.addEventListener('dragleave', onMemoListDragLeave);
+    list.addEventListener('drop', onMemoListDrop);
+  });
+}
+
+function onMemoDragStart(e) {
+  const note = e.target.closest('.memo-note');
+  if (!note) return;
+  memoDrag = {
+    id: note.dataset.id,
+    fromCat: note.dataset.cat,
+    fromEl: note
+  };
+  note.classList.add('memo-dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', memoDrag.id);
+  if (e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(note, 20, 20);
+}
+
+function onMemoDragEnd() {
+  qsa('.memo-note').forEach(n => n.classList.remove('memo-dragging'));
+  qsa('.memo-col-list').forEach(l => l.classList.remove('memo-over'));
+  memoDrag = null;
+}
+
+function onMemoListDragEnter(e) {
+  if (!memoDrag) return;
+  e.preventDefault();
+}
+
+function onMemoListDragOver(e) {
+  if (!memoDrag) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  qsa('.memo-col-list').forEach(l => l.classList.remove('memo-over'));
+  e.currentTarget.classList.add('memo-over');
+}
+
+function onMemoListDragLeave(e) {
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    e.currentTarget.classList.remove('memo-over');
+  }
+}
+
+async function onMemoListDrop(e) {
+  e.preventDefault();
+  if (!memoDrag) return;
+
+  const list = e.currentTarget;
+  const toCat = list.dataset.cat;
+  const note = e.target.closest('.memo-note');
+  const notes = Array.from(list.querySelectorAll('.memo-note')).filter(n => n.dataset.id !== memoDrag.id);
+
+  let toIndex = notes.length;
+  if (note && note.dataset.id !== memoDrag.id) {
+    toIndex = notes.indexOf(note);
+    const rect = note.getBoundingClientRect();
+    if (e.clientY > rect.top + rect.height / 2) toIndex += 1;
+  }
+
+  const m = memos.find(x => x.id === memoDrag.id);
+  if (!m) return;
+
+  const sameCat = m.category === toCat;
+  const catMemos = memos
+    .filter(x => x.category === toCat && x.id !== memoDrag.id)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  catMemos.splice(toIndex, 0, { ...m, category: toCat });
+
+  try {
+    const batch = catMemos.map((item, i) =>
+      updateDoc(doc(db, 'memos', item.id), {
+        category: toCat,
+        order: (i + 1) * 1000,
+        updatedAt: serverTimestamp()
+      })
+    );
+    if (!sameCat || m.category !== toCat) {
+      await Promise.all(batch);
+      toast('📌 ' + toCat.split(' ')[0] + '로 이동됐습니다', 'ok');
+    } else {
+      await Promise.all(batch);
+    }
+  } catch(err) {
+    toast('이동 실패: ' + err.message, 'err');
+  }
+
+  qsa('.memo-col-list').forEach(l => l.classList.remove('memo-over'));
+  memoDrag = null;
+}
+
+// ── 화이트보드 ──────────────────────────────────────────────────
+function getWbAuthor() {
+  if (curA === '호세' || curA === '써든리') return curA;
+  return wbAuthor || '호세';
+}
+
+function renderWhiteboard() {
+  const author = getWbAuthor();
+  wbAuthor = author;
+
+  g('main').innerHTML =
+    '<div class="wb-wrap">' +
+    '<div class="wb-toolbar">' +
+    '<button class="wb-tool on" data-wb-tool="pen" onclick="setWbTool(\'pen\',this)">✏️ 그리기</button>' +
+    '<button class="wb-tool" data-wb-tool="text" onclick="setWbTool(\'text\',this)">📝 텍스트</button>' +
+    '<button class="wb-tool" data-wb-tool="link" onclick="addWbLink()">🔗 링크</button>' +
+    '<button class="wb-tool" data-wb-tool="image" onclick="pickWbImage()">🖼️ 이미지</button>' +
+    '<button class="wb-tool" data-wb-tool="select" onclick="setWbTool(\'select\',this)">👆 선택</button>' +
+    '<button class="wb-tool" data-wb-tool="eraser" onclick="setWbTool(\'eraser\',this)">🧹 지우개</button>' +
+    '<span class="wb-tool-sep"></span>' +
+    '<select id="wbAuthorSel" onchange="wbAuthor=this.value">' +
+    '<option' + (author==='호세'?' selected':'') + '>호세</option>' +
+    '<option' + (author==='써든리'?' selected':'') + '>써든리</option></select>' +
+    '<button class="wb-tool" onclick="openWbSave()">🤖 AI 메모장에 저장</button>' +
+    '<button class="wb-tool" onclick="clearWbSelection()" style="color:#dc2626">🗑 선택 삭제</button>' +
+    '<span class="wb-hint">실시간 공동 작업 · 호세🔵 써든리🩷</span>' +
+    '</div>' +
+    '<div class="wb-viewport tool-pen" id="wbViewport">' +
+    '<div class="wb-surface" id="wbSurface">' +
+    '<canvas id="wbCanvas" width="' + WB_W + '" height="' + WB_H + '"></canvas>' +
+    '<div class="wb-objects" id="wbObjects"></div>' +
+    '</div></div></div>';
+
+  wbTool = 'pen';
+  wbSelectedId = null;
+  initWhiteboardEvents();
+  syncWhiteboardView();
+}
+
+function syncWhiteboardView() {
+  if (curCat !== 'whiteboard' || !g('wbCanvas')) return;
+  redrawWhiteboardStrokes();
+  renderWhiteboardObjects();
+}
+
+function initWhiteboardEvents() {
+  const canvas = g('wbCanvas');
+  const surface = g('wbSurface');
+  if (!canvas || !surface) return;
+
+  canvas.onpointerdown = onWbCanvasDown;
+  canvas.onpointermove = onWbCanvasMove;
+  canvas.onpointerup = onWbCanvasUp;
+  canvas.onpointerleave = onWbCanvasUp;
+  surface.onclick = onWbSurfaceClick;
+}
+
+function setWbViewportToolClass() {
+  const vp = g('wbViewport');
+  if (!vp) return;
+  vp.className = 'wb-viewport tool-' + wbTool;
+}
+
+window.setWbTool = function(tool, el) {
+  wbTool = tool;
+  qsa('.wb-tool[data-wb-tool]').forEach(b => b.classList.remove('on'));
+  if (el) el.classList.add('on');
+  setWbViewportToolClass();
+};
+
+function wbPos(e) {
+  const rect = g('wbCanvas').getBoundingClientRect();
+  return {
+    x: Math.max(0, Math.min(WB_W, e.clientX - rect.left)),
+    y: Math.max(0, Math.min(WB_H, e.clientY - rect.top))
+  };
+}
+
+function onWbCanvasDown(e) {
+  if (wbTool === 'text') {
+    const p = wbPos(e);
+    createWbText(p.x, p.y);
+    return;
+  }
+  if (wbTool === 'select') {
+    wbSelectedId = null;
+    renderWhiteboardObjects();
+    return;
+  }
+  if (wbTool !== 'pen' && wbTool !== 'eraser') return;
+  e.preventDefault();
+  wbDrawing = true;
+  wbCurrentPoints = [wbPos(e)];
+  e.target.setPointerCapture(e.pointerId);
+}
+
+function onWbCanvasMove(e) {
+  if (!wbDrawing) return;
+  const p = wbPos(e);
+  const ctx = g('wbCanvas').getContext('2d');
+  const color = WB_AUTHOR_COLOR[getWbAuthor()];
+  const pts = wbCurrentPoints;
+  if (pts.length) {
+    ctx.strokeStyle = wbTool === 'eraser' ? '#ffffff' : color;
+    ctx.lineWidth = wbTool === 'eraser' ? 18 : 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+  pts.push(p);
+}
+
+async function onWbCanvasUp(e) {
+  if (!wbDrawing) return;
+  wbDrawing = false;
+  try { e.target.releasePointerCapture(e.pointerId); } catch(_) {}
+
+  if (wbTool === 'pen' && wbCurrentPoints.length > 1) {
+    const author = getWbAuthor();
+    const points = simplifyPoints(wbCurrentPoints);
+    try {
+      const docRef = await addDoc(collection(db, 'whiteboard_elements'), {
+        type: 'stroke',
+        points,
+        color: WB_AUTHOR_COLOR[author],
+        width: 3,
+        author,
+        createdAt: serverTimestamp()
+      });
+      wbLocalStrokeId = docRef.id;
+    } catch(err) {
+      toast('그리기 저장 실패: ' + err.message, 'err');
+      redrawWhiteboardStrokes();
+    }
+  } else if (wbTool === 'eraser' && wbCurrentPoints.length) {
+    const hit = findStrokeAt(wbCurrentPoints[wbCurrentPoints.length - 1]);
+    if (hit) {
+      try { await deleteDoc(doc(db, 'whiteboard_elements', hit.id)); }
+      catch(err) { toast('지우기 실패: ' + err.message, 'err'); }
+    }
+    redrawWhiteboardStrokes();
+  }
+  wbCurrentPoints = [];
+}
+
+function simplifyPoints(points) {
+  if (points.length <= 80) return points;
+  const out = [];
+  const step = Math.ceil(points.length / 80);
+  for (let i = 0; i < points.length; i += step) out.push(points[i]);
+  if (out[out.length - 1] !== points[points.length - 1]) out.push(points[points.length - 1]);
+  return out;
+}
+
+function findStrokeAt(p) {
+  let best = null, bestDist = 14;
+  wbElements.filter(e => e.type === 'stroke').forEach(st => {
+    (st.points || []).forEach(pt => {
+      const d = Math.hypot(pt.x - p.x, pt.y - p.y);
+      if (d < bestDist) { bestDist = d; best = st; }
+    });
+  });
+  return best;
+}
+
+function redrawWhiteboardStrokes() {
+  const canvas = g('wbCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, WB_W, WB_H);
+  wbElements.filter(e => e.type === 'stroke').forEach(st => {
+    const pts = st.points || [];
+    if (pts.length < 2) return;
+    ctx.strokeStyle = st.color || '#2563eb';
+    ctx.lineWidth = st.width || 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+  });
+}
+
+function renderWhiteboardObjects() {
+  const layer = g('wbObjects');
+  if (!layer) return;
+  const items = wbElements.filter(e => e.type !== 'stroke');
+  layer.innerHTML = items.map(el => wbObjectHtml(el)).join('');
+  items.forEach(el => bindWbObjectEvents(el));
+}
+
+function wbObjectHtml(el) {
+  const cls = 'wb-item author-' + (el.author === '써든리' ? 'sundari' : 'hosea') +
+    (wbSelectedId === el.id ? ' selected' : '');
+  const style = 'left:' + (el.x||40) + 'px;top:' + (el.y||40) + 'px';
+  const del = '<button class="wb-item-del" type="button" data-del="' + el.id + '">×</button>';
+  const badge = '<span class="wb-item-badge">' + esc(el.author || '호세') + '</span>';
+
+  if (el.type === 'text') {
+    return '<div class="' + cls + ' wb-text" data-id="' + el.id + '" style="' + style + '">' +
+      badge + del + '<div class="wb-text-body" contenteditable="true">' + esc(el.text || '텍스트 입력') + '</div></div>';
+  }
+  if (el.type === 'link') {
+    const url = esc(el.url || '');
+    return '<div class="' + cls + ' wb-link" data-id="' + el.id + '" style="' + style + '">' +
+      badge + del + '<a href="' + url + '" target="_blank" rel="noopener">' + esc(el.label || el.url || '링크') + '</a>' +
+      '<div class="wb-link-url">' + url + '</div></div>';
+  }
+  if (el.type === 'image') {
+    return '<div class="' + cls + ' wb-image" data-id="' + el.id + '" style="' + style + '">' +
+      badge + del + '<img src="' + escAttr(el.url || '') + '" alt="첨부 이미지"/>' +
+      '<div class="wb-image-cap" contenteditable="true">' + esc(el.caption || '이미지 설명') + '</div></div>';
+  }
+  return '';
+}
+
+function bindWbObjectEvents(el) {
+  const node = g('wbObjects')?.querySelector('[data-id="' + el.id + '"]');
+  if (!node) return;
+
+  node.querySelector('[data-del]')?.addEventListener('click', e => {
+    e.stopPropagation();
+    deleteWbElement(el.id);
+  });
+
+  node.addEventListener('pointerdown', e => {
+    if (wbTool !== 'select') return;
+    if (e.target.closest('[contenteditable]') || e.target.closest('a')) return;
+    e.preventDefault();
+    wbSelectedId = el.id;
+    wbDragItem = { id: el.id, startX: e.clientX, startY: e.clientY, origX: el.x || 0, origY: el.y || 0 };
+    node.setPointerCapture(e.pointerId);
+    renderWhiteboardObjects();
+  });
+
+  node.addEventListener('pointermove', e => {
+    if (!wbDragItem || wbDragItem.id !== el.id) return;
+    const dx = e.clientX - wbDragItem.startX;
+    const dy = e.clientY - wbDragItem.startY;
+    node.style.left = (wbDragItem.origX + dx) + 'px';
+    node.style.top = (wbDragItem.origY + dy) + 'px';
+  });
+
+  node.addEventListener('pointerup', async e => {
+    if (!wbDragItem || wbDragItem.id !== el.id) return;
+    const dx = e.clientX - wbDragItem.startX;
+    const dy = e.clientY - wbDragItem.startY;
+    const nx = Math.max(0, Math.min(WB_W - 100, wbDragItem.origX + dx));
+    const ny = Math.max(0, Math.min(WB_H - 60, wbDragItem.origY + dy));
+    wbDragItem = null;
+    try {
+      await updateDoc(doc(db, 'whiteboard_elements', el.id), { x: nx, y: ny, updatedAt: serverTimestamp() });
+    } catch(err) { toast('이동 실패: ' + err.message, 'err'); }
+  });
+
+  node.addEventListener('click', e => {
+    if (wbTool === 'select' || wbTool === 'eraser') {
+      e.stopPropagation();
+      wbSelectedId = el.id;
+      if (wbTool === 'eraser') deleteWbElement(el.id);
+      else renderWhiteboardObjects();
+    }
+  });
+
+  const textBody = node.querySelector('.wb-text-body');
+  if (textBody) {
+    textBody.addEventListener('blur', async () => {
+      const text = textBody.textContent.trim();
+      if (text && text !== el.text) {
+        try { await updateDoc(doc(db, 'whiteboard_elements', el.id), { text, updatedAt: serverTimestamp() }); }
+        catch(err) { toast('텍스트 저장 실패', 'err'); }
+      }
+    });
+  }
+
+  const cap = node.querySelector('.wb-image-cap');
+  if (cap) {
+    cap.addEventListener('blur', async () => {
+      const caption = cap.textContent.trim();
+      if (caption !== (el.caption || '')) {
+        try { await updateDoc(doc(db, 'whiteboard_elements', el.id), { caption, updatedAt: serverTimestamp() }); }
+        catch(err) { toast('설명 저장 실패', 'err'); }
+      }
+    });
+  }
+}
+
+async function onWbSurfaceClick(e) {
+  if (e.target !== g('wbSurface') && e.target !== g('wbObjects') && e.target !== g('wbCanvas')) return;
+  if (wbTool === 'text') {
+    const rect = g('wbSurface').getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    await createWbText(x, y);
+  } else if (wbTool === 'select') {
+    wbSelectedId = null;
+    renderWhiteboardObjects();
+  }
+}
+
+async function createWbText(x, y) {
+  const author = getWbAuthor();
+  try {
+    await addDoc(collection(db, 'whiteboard_elements'), {
+      type: 'text',
+      text: '아이디어를 입력하세요',
+      x: Math.max(0, x - 20),
+      y: Math.max(0, y - 20),
+      author,
+      createdAt: serverTimestamp()
+    });
+  } catch(err) { toast('텍스트 추가 실패: ' + err.message, 'err'); }
+}
+
+window.addWbLink = async function() {
+  const label = prompt('링크 제목', '참고 링크');
+  if (label === null) return;
+  const url = prompt('URL (https://...)', 'https://');
+  if (!url) return;
+  const author = getWbAuthor();
+  try {
+    await addDoc(collection(db, 'whiteboard_elements'), {
+      type: 'link',
+      label: label.trim() || url,
+      url: url.trim(),
+      x: 80 + Math.random() * 200,
+      y: 80 + Math.random() * 200,
+      author,
+      createdAt: serverTimestamp()
+    });
+    setWbTool('select', qsa('.wb-tool[data-wb-tool="select"]')[0]);
+  } catch(err) { toast('링크 추가 실패: ' + err.message, 'err'); }
+};
+
+window.pickWbImage = function() {
+  g('wbImageInput').click();
+};
+
+g('wbImageInput').addEventListener('change', async e => {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (!file || curCat !== 'whiteboard') return;
+  try {
+    const blob = await compressWbImage(file);
+    const path = 'whiteboard/' + Date.now() + '_' + file.name.replace(/[^\w.-]/g, '_');
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, blob);
+    const url = await getDownloadURL(storageRef);
+    const author = getWbAuthor();
+    await addDoc(collection(db, 'whiteboard_elements'), {
+      type: 'image',
+      url,
+      caption: file.name,
+      x: 100 + Math.random() * 180,
+      y: 100 + Math.random() * 180,
+      author,
+      createdAt: serverTimestamp()
+    });
+    toast('이미지가 보드에 추가됐습니다', 'ok');
+  } catch(err) {
+    toast('이미지 업로드 실패: ' + err.message, 'err');
+  }
+});
+
+function compressWbImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 900;
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * scale);
+        c.height = Math.round(img.height * scale);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(b => b ? resolve(b) : reject(new Error('압축 실패')), 'image/jpeg', 0.82);
+      };
+      img.onerror = () => reject(new Error('이미지 로드 실패'));
+      img.src = ev.target.result;
+    };
+    reader.onerror = () => reject(new Error('파일 읽기 실패'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function deleteWbElement(id) {
+  try {
+    await deleteDoc(doc(db, 'whiteboard_elements', id));
+    if (wbSelectedId === id) wbSelectedId = null;
+  } catch(err) { toast('삭제 실패: ' + err.message, 'err'); }
+}
+
+window.clearWbSelection = async function() {
+  if (!wbSelectedId) { toast('선택된 항목이 없습니다', 'err'); return; }
+  await deleteWbElement(wbSelectedId);
+};
+
+function onWbKeyDown(e) {
+  if (curCat !== 'whiteboard') return;
+  if ((e.key === 'Delete' || e.key === 'Backspace') && wbSelectedId && !e.target.isContentEditable) {
+    e.preventDefault();
+    deleteWbElement(wbSelectedId);
+  }
+}
+
+function collectWhiteboardText() {
+  const lines = ['[화이트보드 아이디어 정리]'];
+  const objs = wbElements
+    .filter(e => e.type !== 'stroke')
+    .sort((a, b) => (a.y || 0) - (b.y || 0));
+
+  objs.forEach(el => {
+    if (el.type === 'text' && el.text?.trim()) {
+      lines.push('• ' + el.text.trim() + ' (' + el.author + ')');
+    }
+    if (el.type === 'link') {
+      lines.push('• [링크] ' + (el.label || el.url) + ': ' + el.url + ' (' + el.author + ')');
+    }
+    if (el.type === 'image') {
+      lines.push('• [이미지] ' + (el.caption || '첨부 이미지') + ': ' + el.url + ' (' + el.author + ')');
+    }
+  });
+
+  const strokes = wbElements.filter(e => e.type === 'stroke').length;
+  if (strokes) lines.push('• [스케치] 그리기 ' + strokes + '개 포함');
+  if (lines.length === 1) lines.push('• (화이트보드에 정리된 텍스트/링크/이미지가 없습니다)');
+  return lines.join('\n');
+}
+
+window.openWbSave = function() {
+  const author = getWbAuthor();
+  g('wbSaveText').value = collectWhiteboardText();
+  g('wbSaveAuthor').value = author;
+  g('wbSaveMod').classList.remove('hidden');
+};
+
+window.closeWbSave = function() {
+  g('wbSaveMod').classList.add('hidden');
+};
+
+window.confirmWbSave = async function() {
+  const text = g('wbSaveText').value.trim();
+  const author = g('wbSaveAuthor').value;
+  if (!text) { toast('저장할 내용이 없습니다', 'err'); return; }
+  try {
+    const { category } = await saveMemoFromText(text, author, 'whiteboard');
+    closeWbSave();
+    toast('🤖 AI 메모장(' + category.split(' ')[0] + ')에 저장됐습니다', 'ok');
+  } catch(e) {
+    toast('저장 실패: ' + e.message, 'err');
+  }
+};
+
 // ── 중요 정보 모달 ────────────────────────────────────────────
 window.openInfo = function() {
   if (!infoData) infoData = clone(DEFAULT_INFO);
@@ -1298,7 +2409,9 @@ document.addEventListener('keydown', e => {
     closeTask();
     closeInfo();
     closeDp();
+    closeWbSave();
   }
+  if (curCat === 'whiteboard') onWbKeyDown(e);
 });
 </script>
 </body>
